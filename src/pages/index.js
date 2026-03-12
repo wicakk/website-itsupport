@@ -1,0 +1,8 @@
+export { default as DashboardPage }  from './DashboardPage'
+export { default as TicketsPage }    from './TicketsPage'
+export { default as AssetsPage }     from './AssetsPage'
+export { default as KnowledgePage }  from './KnowledgePage'
+export { default as MonitoringPage } from './MonitoringPage'
+export { default as ReportsPage }    from './ReportsPage'
+export { default as UsersPage }      from './UsersPage'
+export { default as SettingsPage }   from './SettingsPage'
