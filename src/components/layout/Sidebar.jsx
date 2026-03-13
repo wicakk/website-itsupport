@@ -1,7 +1,8 @@
 import { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Maximize2, LogOut } from 'lucide-react'
 import { T } from '../../theme'
 import { Avatar } from '../ui'
-import { useApp, useNav, useAuth } from '../../context/AppContext'
+import { useApp, useNav, useAuth } from "../../context/AppContext";
+import { NAV_PERMISSIONS } from '../../config/navPermissions'
 
 const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings }
 
@@ -41,7 +42,26 @@ const Sidebar = ({ navItems }) => {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {navItems.map(item => <NavItem key={item.id} item={item} active={page === item.id} collapsed={sidebarCollapsed} onClick={navigate} />)}
+        {/* {navItems.map(item => <NavItem key={item.id} item={item} active={page === item.id} collapsed={sidebarCollapsed} onClick={navigate} />)} */}
+        {navItems
+    .filter(item => {
+      if (!user) return false
+
+      const allowedRoles = NAV_PERMISSIONS[item.id]
+
+      if (!allowedRoles) return true // jika tidak ada rule → tampilkan
+
+      return allowedRoles.includes(user.role)
+    })
+    .map(item => (
+      <NavItem
+        key={item.id}
+        item={item}
+        active={page === item.id}
+        collapsed={sidebarCollapsed}
+        onClick={navigate}
+      />
+    ))}
       </nav>
 
       {/* Footer */}
