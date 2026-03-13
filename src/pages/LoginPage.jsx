@@ -285,7 +285,7 @@ const LoginPage = () => {
               {[
                 ['IT Support', 'rizky@company.com'],
                 ['Manager', 'manager@company.com'],
-                ['User', 'user@company.com'],
+                ['User', 'eko@company.com'],
               ].map(([role, em]) => (
                 <button
                   key={role}
