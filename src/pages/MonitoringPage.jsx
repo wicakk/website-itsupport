@@ -23,7 +23,7 @@ const useServerMonitor = (servers) => {
       const updated = {}
       servers.forEach(s => {
         updated[s.name] = {
-          cpu: Math.min(100, Math.max(0, s.cpu_usage + Math.floor(Math.random()*11-5))), // ±5%
+          cpu: Math.min(100, Math.max(0, s.cpu_usage + Math.floor(Math.random()*11-5))),
           ram: Math.min(100, Math.max(0, s.ram_usage + Math.floor(Math.random()*11-5))),
           disk: Math.min(100, Math.max(0, s.disk_usage + Math.floor(Math.random()*11-5)))
         }
@@ -49,40 +49,42 @@ const ServerCard = ({ server, metrics, onRefresh }) => {
   const cfg = SERVER_STATUS_CFG[status] ?? SERVER_STATUS_CFG['Unknown']
 
   return (
-    <Card style={{ padding: 18 }}>
-
+    <Card className=" rounded-xl shadow-md hover:shadow-lg transition-shadow" style={{padding:'20px', borderColor:cfg.border}}>
       {/* HEADER */}
-      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:38, height:38, borderRadius:10, background:`${cfg.color}12`, border:`1px solid ${cfg.color}25`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Server size={16} color={cfg.color} />
+      <div className="flex justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg border flex items-center justify-center" style={{background:`${cfg.color}12`, borderColor:`${cfg.color}25`}}>
+            <Server size={18} color={cfg.color} />
           </div>
           <div>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ color:T.text, fontWeight:700, fontSize:13, fontFamily:'monospace' }}>{server.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-sm" style={{color:T.text}}>{server.name}</span>
               <Badge label={status} cfg={{ bg:cfg.bg, text:cfg.color, border:cfg.border }} dot />
             </div>
-            <div style={{ color:T.textDim, fontSize:10, marginTop:2 }}>
+            <div className="text-xs mt-0.5" style={{color:T.textDim}}>
               {server.ip_address} · {server.os} · Uptime: {server.uptime}
             </div>
           </div>
         </div>
-
-        <button onClick={() => onRefresh(server)} style={{ width:28, height:28, borderRadius:8, background:'rgba(255,255,255,0.04)', border:`1px solid ${T.border}`, color:T.textMuted, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <RefreshCw size={12} />
+        <button
+          onClick={() => onRefresh(server)}
+          className="w-8 h-8 rounded-lg border flex items-center justify-center bg-white/5 text-gray-400 hover:bg-white/10 transition-colors"
+          style={{borderColor:T.border}}
+        >
+          <RefreshCw size={14} />
         </button>
       </div>
 
       {/* METRICS */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16 }}>
+      <div className="grid grid-cols-3 gap-5" >
         {[
           ['CPU Usage', cpu, Cpu],
           ['RAM Usage', ram, Database],
           ['Disk Usage', disk, HardDrive]
         ].map(([label, val, Ic], i) => (
           <div key={i}>
-            <div style={{ display:'flex', alignItems:'center', gap:5, color:T.textMuted, fontSize:11, marginBottom:8 }}>
-              <Ic size={11} /> {label}
+            <div className="flex items-center gap-1 text-xs mb-2" style={{color:T.textMuted}}>
+              <Ic size={12} /> {label}
             </div>
             <ProgressBar value={val} />
           </div>
@@ -102,46 +104,41 @@ const MonitoringPage = () => {
   const downCount    = servers.filter(s => s.status === 'Down').length
 
   const handleRefresh = (server) => {
-    // Mock refresh metrics single server
     setServers(prev => prev.map(s => s.id === server.id ? { ...s, cpu_usage:s.cpu_usage, ram_usage:s.ram_usage, disk_usage:s.disk_usage } : s))
   }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-
+    <div className="flex flex-col gap-6">
       {/* HEADER */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+      <div className="flex justify-between items-start">
         <PageHeader title="Monitoring" subtitle="Real-time server status" />
-        <div style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:20, padding:'5px 14px' }}>
-          <div style={{ width:6, height:6, borderRadius:'50%', background:T.success, animation:'itsPulse 1.4s ease-in-out infinite' }} />
-          <span style={{ color:T.success, fontSize:11, fontWeight:600 }}>Live</span>
+        <div className="flex items-center gap-2 px-4 py-1 rounded-full border border-green-400 bg-green-100/20">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span className="text-xs font-semibold text-green-500" >Live</span>
         </div>
       </div>
 
       {/* STATUS CARDS */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+      <div className=" grid grid-cols-3 gap-4">
         {[
           [onlineCount, 'Online', CheckCircle2, T.success],
           [warningCount, 'Warning', AlertTriangle, T.warning],
           [downCount, 'Down', XCircle, T.danger]
         ].map(([v,l,Ic,c],i)=>(
-          <Card key={i} style={{ padding:16, textAlign:'center' }}>
-            <Ic size={22} color={c} style={{ marginBottom:8 }} />
-            <div style={{ color:c, fontSize:26, fontWeight:800 }}>{v}</div>
-            <div style={{ color:T.textMuted, fontSize:12, marginTop:3 }}>{l}</div>
+          <Card key={i} className="text-center rounded-xl shadow-md hover:shadow-lg transition-shadow" style={{padding:'20px'}}>
+            <Ic size={24} color={c} className="mb-2" />
+            <div className="font-extrabold text-2xl" style={{color:c}}>{v}</div>
+            <div className="text-sm text-gray-400 mt-1">{l}</div>
           </Card>
         ))}
       </div>
 
       {/* SERVER LIST */}
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      <div className="flex flex-col gap-4">
         {servers.map(s => (
           <ServerCard key={s.id} server={s} metrics={metrics} onRefresh={handleRefresh} />
         ))}
       </div>
-
-      {/* Keyframes untuk pulse */}
-      <style>{`@keyframes itsPulse {0% {transform:scale(1)}50% {transform:scale(1.3)}100% {transform:scale(1)}}`}</style>
     </div>
   )
 }
