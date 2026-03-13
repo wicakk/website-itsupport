@@ -1,46 +1,57 @@
-import { AppProvider, useApp, useAuth, useNav } from './context/AppContext'
-import AppLayout from './components/layout/AppLayout'
-import LoginPage from './pages/LoginPage'
-import { PAGE_PERMISSIONS } from "./config/navPermissions"
+import { Routes, Route, Navigate } from "react-router-dom"
+import { AppProvider, useAuth } from "./context/AppContext"
+
+import AppLayout from "./components/layout/AppLayout"
+import LoginPage from "./pages/LoginPage"
 
 import {
-  DashboardPage, TicketsPage, AssetsPage, KnowledgePage,
-  MonitoringPage, ReportsPage, UsersPage, SettingsPage,
-} from './pages'
+  DashboardPage,
+  TicketsPage,
+  AssetsPage,
+  KnowledgePage,
+  MonitoringPage,
+  ReportsPage,
+  UsersPage,
+  SettingsPage,
+} from "./pages"
 
-const PAGES = {
-  dashboard:  DashboardPage,
-  tickets:    TicketsPage,
-  assets:     AssetsPage,
-  knowledge:  KnowledgePage,
-  monitoring: MonitoringPage,
-  reports:    ReportsPage,
-  users:      UsersPage,
-  settings:   SettingsPage,
-}
-
-const Router = () => {
-  const { page, setPage } = useNav()
+function ProtectedRoutes() {
   const { user } = useAuth()
 
-  // belum login
-  if (!user) return <LoginPage />
-
-  const allowedRoles = PAGE_PERMISSIONS[page] || []
-  const hasAccess = allowedRoles.includes(user.role)
-
-  // jika tidak punya akses → redirect ke dashboard
-  if (!hasAccess) {
-    setPage("dashboard")
-    return null
+  if (!user) {
+    return <Navigate to="/login" />
   }
-
-  const PageComponent = PAGES[page] ?? DashboardPage
 
   return (
     <AppLayout>
-      <PageComponent />
+      <Routes>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/tickets" element={<TicketsPage />} />
+        <Route path="/assets" element={<AssetsPage />} />
+        <Route path="/knowledge" element={<KnowledgePage />} />
+        <Route path="/monitoring" element={<MonitoringPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
     </AppLayout>
+  )
+}
+
+function Router() {
+  const { user } = useAuth()
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/dashboard" /> : <LoginPage />}
+      />
+
+      <Route path="/*" element={<ProtectedRoutes />} />
+    </Routes>
   )
 }
 
