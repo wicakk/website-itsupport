@@ -15,6 +15,7 @@ import {
   SettingsPage,
   TicketDetailPage,
   AssetDetailPage,
+  KnowledgeDetailPage,
 } from "./pages"
 
 function ProtectedRoutes() {
@@ -40,6 +41,7 @@ function ProtectedRoutes() {
 
         <Route path="/tickets/:id" element={<TicketDetailPage />} />
         <Route path="/assets/:id" element={<AssetDetailPage />} />
+        <Route path="/knowledge/:id" element={<KnowledgeDetailPage />} />
       </Routes>
     </AppLayout>
   )

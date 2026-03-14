@@ -64,6 +64,128 @@ const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange, loadi
   )
 }
 
+
+// ─── NewTicketModal ───────────────────────────────────────────
+const PRIORITIES   = ['Low', 'Medium', 'High', 'Critical']
+const TICKET_CATS  = ['Network', 'Email', 'Printer', 'Software', 'Hardware', 'Server', 'Other']
+const EMPTY_TICKET = { title: '', category: 'Network', priority: 'Medium', description: '' }
+
+const inputCls = 'w-full bg-white/5 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition'
+
+const NewTicketModal = ({ onClose, onSubmit, submitting }) => {
+  const { authFetch } = useAuth()
+  const [form, setForm]     = useState(EMPTY_TICKET)
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  const set = (k) => (e) => {
+    setForm(f => ({ ...f, [k]: e.target.value }))
+    setErrors(e2 => ({ ...e2, [k]: undefined }))
+  }
+
+  const validate = () => {
+    const e = {}
+    if (!form.title.trim())       e.title       = 'Wajib diisi'
+    if (!form.description.trim()) e.description = 'Wajib diisi'
+    return e
+  }
+
+  const handleSubmit = async () => {
+    const e = validate()
+    if (Object.keys(e).length) { setErrors(e); return }
+    setSaving(true)
+    try {
+      const res = await authFetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) throw new Error('Gagal membuat tiket')
+      onSubmit()
+    } catch (err) {
+      setErrors({ _global: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+      onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <p className="text-gray-100 font-bold text-base">Buat Tiket Baru</p>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition text-lg leading-none">✕</button>
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col gap-4 px-5 py-5 overflow-y-auto">
+          {/* Judul */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+              Judul <span className="text-red-400">*</span>
+            </label>
+            <input className={`${inputCls} ${errors.title ? 'border-red-500' : ''}`}
+              placeholder="Deskripsi singkat masalah..." value={form.title} onChange={set('title')} />
+            {errors.title && <p className="text-red-400 text-[11px] mt-1">{errors.title}</p>}
+          </div>
+
+          {/* Kategori + Prioritas */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Kategori</label>
+              <select className={inputCls} value={form.category} onChange={set('category')}>
+                {TICKET_CATS.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Prioritas</label>
+              <select className={inputCls} value={form.priority} onChange={set('priority')}>
+                {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Deskripsi */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+              Deskripsi <span className="text-red-400">*</span>
+            </label>
+            <textarea
+              className={`${inputCls} min-h-[120px] resize-y ${errors.description ? 'border-red-500' : ''}`}
+              placeholder="Jelaskan masalah secara detail..."
+              value={form.description}
+              onChange={set('description')}
+            />
+            {errors.description && <p className="text-red-400 text-[11px] mt-1">{errors.description}</p>}
+          </div>
+
+          {errors._global && (
+            <div className="px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs">
+              {errors._global}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-800">
+          <button onClick={onClose} disabled={saving}
+            className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+            Batal
+          </button>
+          <button onClick={handleSubmit} disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
+            {saving ? 'Menyimpan...' : 'Buat Tiket'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const TicketsPage = () => {
   const { authFetch } = useAuth()
   const navigate = useNavigate()

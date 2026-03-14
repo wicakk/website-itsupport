@@ -1,25 +1,22 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Plus, Wifi, Mail, Printer, Layers, Cpu, BookOpen,
-  User, CalendarDays, Eye, Star, X, Save, AlertTriangle,
-  Edit2, Trash2, Tag, FileText,
+  User, CalendarDays, Eye, Star, Edit2, Trash2, Tag,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react'
-import { T } from '../theme'
-import {
-  Card, PageHeader, SearchBar, FilterTabs,
-  PrimaryButton, EmptyState,
-} from '../components/ui'
+import { PageHeader, SearchBar, FilterTabs, PrimaryButton, EmptyState } from '../components/ui'
 import { useAuth } from '../context/AppContext'
 import useSearch from '../hooks/useSearch'
 import useFilter from '../hooks/useFilter'
 
-/* ─── Konstanta ──────────────────────────────────────────── */
+// ─── Constants ────────────────────────────────────────────────
 const CAT_COLOR = {
-  Network:  '#06B6D4',
-  Email:    '#8B5CF6',
-  Printer:  '#F59E0B',
-  Software: '#3B8BFF',
-  Hardware: '#10B981',
+  Network:  { text: 'text-cyan-400',   bg: 'bg-cyan-400/10',   border: 'border-cyan-400/25'   },
+  Email:    { text: 'text-violet-400', bg: 'bg-violet-400/10', border: 'border-violet-400/25' },
+  Printer:  { text: 'text-amber-400',  bg: 'bg-amber-400/10',  border: 'border-amber-400/25'  },
+  Software: { text: 'text-blue-400',   bg: 'bg-blue-400/10',   border: 'border-blue-400/25'   },
+  Hardware: { text: 'text-emerald-400',bg: 'bg-emerald-400/10',border: 'border-emerald-400/25'},
 }
 const CAT_ICON = {
   Network:  <Wifi size={11} />,
@@ -30,160 +27,36 @@ const CAT_ICON = {
 }
 const CATEGORIES = ['Network', 'Email', 'Printer', 'Software', 'Hardware']
 
-/* ─── Shared Styles ──────────────────────────────────────── */
-const overlayStyle = {
-  position: 'fixed', inset: 0,
-  background: 'rgba(0,0,0,0.55)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  zIndex: 1000,
-}
-const modalBase = {
-  background: T.surface ?? '#1e2433',
-  borderRadius: 12,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-  maxWidth: '90vw',
-  overflow: 'hidden',
-}
-const inputStyle = {
-  width: '100%',
-  padding: '8px 10px',
-  borderRadius: 6,
-  border: `1px solid ${T.border}`,
-  fontSize: 13,
-  color: T.text,
-  background: T.bg ?? '#131929',
-  outline: 'none',
-  boxSizing: 'border-box',
-  colorScheme: 'dark',
-}
-const labelStyle = {
-  display: 'block', fontSize: 11, fontWeight: 600,
-  color: T.textDim, textTransform: 'uppercase',
-  letterSpacing: '0.06em', marginBottom: 4,
-}
-const iconBtn = (color) => ({
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: 28, height: 28, borderRadius: 6,
-  border: `1px solid ${T.border}`,
-  background: 'none', cursor: 'pointer', color,
-  transition: 'background 0.15s',
-})
+const getCat = (c) => CAT_COLOR[c] ?? { text: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/25' }
+const getAuthor = (a) => typeof a.author === 'object' ? a.author?.name : a.author
+const getTags   = (a) => Array.isArray(a.tags) ? a.tags : []
 
-/* ─── Modal: View Artikel ────────────────────────────────── */
-const ViewModal = ({ article, onClose, onEdit, onDelete }) => {
-  const category = article.category ?? 'General'
-  const color = CAT_COLOR[category] ?? T.accent
-  const author = typeof article.author === 'object' ? article.author?.name : article.author
-  const tags = Array.isArray(article.tags) ? article.tags : []
-
-  return (
-    <div style={overlayStyle} onClick={onClose}>
-      <div
-        style={{ ...modalBase, width: 620, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
-        onClick={(e) => e.stopPropagation()}
+// ─── StarRating ───────────────────────────────────────────────
+const StarRating = ({ value = 0, onChange, readonly = false, size = 13 }) => (
+  <div className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map((i) => (
+      <button
+        key={i}
+        type="button"
+        disabled={readonly}
+        onClick={() => onChange?.(i)}
+        className={`transition ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'}`}
       >
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-          padding: '18px 20px 14px', borderBottom: `1px solid ${T.border}`, gap: 12,
-        }}>
-          <div style={{ flex: 1 }}>
-            {/* Category badge */}
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              background: `${color}15`, border: `1px solid ${color}30`,
-              color, padding: '2px 9px', borderRadius: 20, fontSize: 10,
-              fontWeight: 600, marginBottom: 8,
-            }}>
-              {CAT_ICON[category]}
-              {category}
-            </span>
-            <h2 style={{ color: T.text, fontSize: 17, fontWeight: 700, lineHeight: 1.4, margin: 0 }}>
-              {article.title}
-            </h2>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textDim, padding: 4, display: 'flex' }}>
-            <X size={16} />
-          </button>
-        </div>
+        <Star
+          size={size}
+          className={i <= Math.round(value) ? 'text-amber-400' : 'text-gray-600'}
+          fill={i <= Math.round(value) ? 'currentColor' : 'none'}
+        />
+      </button>
+    ))}
+    <span className="text-gray-500 text-[11px] ml-1">{Number(value).toFixed(1)}</span>
+  </div>
+)
 
-        {/* Meta */}
-        <div style={{ padding: '10px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          {[
-            [User, author ?? 'Unknown'],
-            [CalendarDays, article.date ?? '-'],
-            [Eye, `${article.views ?? 0} views`],
-          ].map(([Ic, v], i) => (
-            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, color: T.textDim, fontSize: 11 }}>
-              <Ic size={10} /> {v}
-            </span>
-          ))}
-          {/* Rating */}
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            {[1,2,3,4,5].map(i => (
-              <Star key={i} size={11}
-                fill={i <= Math.round(article.rating ?? 0) ? T.warning : 'none'}
-                color={T.warning}
-              />
-            ))}
-            <span style={{ color: T.textMuted, fontSize: 11, marginLeft: 3 }}>{article.rating ?? 0}</span>
-          </span>
-        </div>
+// ─── inputCls ─────────────────────────────────────────────────
+const inputCls = 'w-full bg-white/5 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition'
 
-        {/* Konten */}
-        <div style={{ padding: '16px 20px', overflowY: 'auto', flex: 1 }}>
-          {article.content ? (
-            <p style={{ color: T.text, fontSize: 13, lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>
-              {article.content}
-            </p>
-          ) : (
-            <p style={{ color: T.textDim, fontSize: 13, fontStyle: 'italic' }}>
-              Konten artikel tidak tersedia.
-            </p>
-          )}
-
-          {/* Tags */}
-          {tags.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 16 }}>
-              <Tag size={11} color={T.textDim} style={{ marginTop: 2 }} />
-              {tags.map((t, i) => (
-                <span key={i} style={{
-                  background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border}`,
-                  color: T.textDim, padding: '2px 7px', borderRadius: 20, fontSize: 10,
-                }}>#{t}</span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          display: 'flex', justifyContent: 'flex-end', gap: 8,
-          padding: '12px 20px', borderTop: `1px solid ${T.border}`,
-        }}>
-          <button onClick={onDelete} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '7px 14px', borderRadius: 6, border: 'none',
-            background: `${T.danger}20`, color: T.danger,
-            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-          }}>
-            <Trash2 size={12} /> Hapus
-          </button>
-          <button onClick={onEdit} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '7px 14px', borderRadius: 6, border: 'none',
-            background: T.primary, color: '#fff',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-          }}>
-            <Edit2 size={12} /> Edit
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─── Modal: Edit / Tambah Artikel ──────────────────────── */
+// ─── EditModal ────────────────────────────────────────────────
 const EditModal = ({ article, onClose, onSave, loading }) => {
   const isNew = !article
   const [form, setForm] = useState({
@@ -196,81 +69,56 @@ const EditModal = ({ article, onClose, onSave, loading }) => {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
   return (
-    <div style={overlayStyle} onClick={onClose}>
-      <div
-        style={{ ...modalBase, width: 560, display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+      onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 20px', borderBottom: `1px solid ${T.border}`,
-        }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>
-            {isNew ? 'Tambah Artikel' : 'Edit Artikel'}
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textDim, padding: 4, display: 'flex' }}>
-            <X size={16} />
-          </button>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <p className="text-gray-100 font-bold text-base">{isNew ? 'Tambah Artikel' : 'Edit Artikel'}</p>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition">✕</button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
+        <div className="flex flex-col gap-4 px-5 py-4 overflow-y-auto">
           <div>
-            <label style={labelStyle}>Judul</label>
-            <input style={inputStyle} value={form.title} onChange={set('title')} placeholder="Judul artikel..." />
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Judul</label>
+            <input className={inputCls} value={form.title} onChange={set('title')} placeholder="Judul artikel..." />
           </div>
-
           <div>
-            <label style={labelStyle}>Kategori</label>
-            <select style={inputStyle} value={form.category} onChange={set('category')}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Kategori</label>
+            <select className={inputCls} value={form.category} onChange={set('category')}>
+              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
-
           <div>
-            <label style={labelStyle}>Konten</label>
-            <textarea
-              style={{ ...inputStyle, minHeight: 140, resize: 'vertical', fontFamily: 'inherit' }}
-              value={form.content}
-              onChange={set('content')}
-              placeholder="Isi artikel..."
-            />
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Konten</label>
+            <textarea className={`${inputCls} min-h-[140px] resize-y`} value={form.content}
+              onChange={set('content')} placeholder="Isi artikel..." />
           </div>
-
           <div>
-            <label style={labelStyle}>Tags <span style={{ fontWeight: 400, textTransform: 'none' }}>(pisah dengan koma)</span></label>
-            <input style={inputStyle} value={form.tags} onChange={set('tags')} placeholder="vpn, network, setup" />
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+              Tags <span className="normal-case font-normal">(pisah dengan koma)</span>
+            </label>
+            <input className={inputCls} value={form.tags} onChange={set('tags')} placeholder="vpn, network, setup" />
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{
-          display: 'flex', justifyContent: 'flex-end', gap: 8,
-          padding: '12px 20px', borderTop: `1px solid ${T.border}`,
-        }}>
-          <button onClick={onClose} disabled={loading} style={{
-            padding: '7px 14px', borderRadius: 6, border: `1px solid ${T.border}`,
-            background: 'transparent', fontSize: 12, cursor: 'pointer', color: T.text,
-          }}>
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-800">
+          <button onClick={onClose} disabled={loading}
+            className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
             Batal
           </button>
           <button
+            disabled={loading || !form.title.trim()}
             onClick={() => onSave(article?.id ?? null, {
               ...form,
               tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
             })}
-            disabled={loading || !form.title.trim()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 14px', borderRadius: 6, border: 'none',
-              background: T.primary, color: '#fff',
-              fontSize: 12, fontWeight: 600,
-              cursor: (loading || !form.title.trim()) ? 'not-allowed' : 'pointer',
-              opacity: (loading || !form.title.trim()) ? 0.6 : 1,
-            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
           >
-            <Save size={12} />
             {loading ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
@@ -279,189 +127,187 @@ const EditModal = ({ article, onClose, onSave, loading }) => {
   )
 }
 
-/* ─── Modal: Konfirmasi Hapus ────────────────────────────── */
+// ─── DeleteModal ──────────────────────────────────────────────
 const DeleteModal = ({ article, onClose, onConfirm, loading }) => (
-  <div style={overlayStyle} onClick={onClose}>
-    <div
-      style={{ ...modalBase, width: 380, padding: 24, textAlign: 'center' }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div style={{
-        width: 48, height: 48, borderRadius: '50%',
-        background: `${T.danger}15`, display: 'flex',
-        alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px',
-      }}>
-        <AlertTriangle size={22} color={T.danger} />
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+    onClick={onClose}>
+    <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl"
+      onClick={e => e.stopPropagation()}>
+      <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
+        <Trash2 size={20} className="text-red-400" />
       </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 8 }}>Hapus Artikel?</div>
-      <div style={{ fontSize: 13, color: T.textDim, marginBottom: 20 }}>
-        <strong style={{ color: T.text }}>{article.title}</strong> akan dihapus secara permanen.
-      </div>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button onClick={onClose} disabled={loading} style={{
-          padding: '8px 18px', borderRadius: 6, border: `1px solid ${T.border}`,
-          background: 'transparent', fontSize: 12, cursor: 'pointer', color: T.text,
-        }}>
+      <p className="text-gray-100 font-bold text-base mb-2">Hapus Artikel?</p>
+      <p className="text-gray-400 text-sm mb-5">
+        <strong className="text-gray-200">{article.title}</strong> akan dihapus secara permanen.
+      </p>
+      <div className="flex gap-2 justify-center">
+        <button onClick={onClose} disabled={loading}
+          className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
           Batal
         </button>
-        <button onClick={() => onConfirm(article.id)} disabled={loading} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 18px', borderRadius: 6, border: 'none',
-          background: T.danger, color: '#fff', fontSize: 12, fontWeight: 600,
-          cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
-        }}>
-          <Trash2 size={12} />
-          {loading ? 'Menghapus...' : 'Ya, Hapus'}
+        <button onClick={() => onConfirm(article.id)} disabled={loading}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition">
+          <Trash2 size={12} /> {loading ? 'Menghapus...' : 'Ya, Hapus'}
         </button>
       </div>
     </div>
   </div>
 )
 
-/* ─── Toast ──────────────────────────────────────────────── */
+// ─── Toast ────────────────────────────────────────────────────
 const Toast = ({ message, type = 'success' }) => (
-  <div style={{
-    position: 'fixed', bottom: 24, right: 24,
-    padding: '10px 16px', borderRadius: 8,
-    background: type === 'success' ? T.success : T.danger,
-    color: '#fff', fontSize: 13, fontWeight: 500,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.25)', zIndex: 2000,
-  }}>
+  <div className={`fixed bottom-6 right-6 z-[2000] px-4 py-2.5 rounded-xl text-white text-sm font-medium shadow-2xl
+    ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
     {message}
   </div>
 )
 
-/* ─── Article Card ───────────────────────────────────────── */
-const ArticleCard = ({ article, onView, onEdit, onDelete }) => {
-  const category = article.category ?? 'General'
-  const color = CAT_COLOR[category] ?? T.accent
-  const author = typeof article.author === 'object' ? article.author?.name : article.author
-  const tags = Array.isArray(article.tags) ? article.tags : []
+// ─── Pagination ───────────────────────────────────────────────
+const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange }) => {
+  if (total === 0) return null
+
+  const getPages = () => {
+    if (lastPage <= 1) return [1]
+    const delta = 2
+    const left  = Math.max(2, currentPage - delta)
+    const right = Math.min(lastPage - 1, currentPage + delta)
+    const middle = []
+    for (let i = left; i <= right; i++) middle.push(i)
+    const pages = [1]
+    if (left > 2) pages.push('...')
+    pages.push(...middle)
+    if (right < lastPage - 1) pages.push('...')
+    if (lastPage > 1) pages.push(lastPage)
+    return pages
+  }
+
+  const from = Math.min((currentPage - 1) * perPage + 1, total)
+  const to   = Math.min(currentPage * perPage, total)
+  const base = 'min-w-[32px] h-8 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-semibold transition border'
 
   return (
-    <Card hover style={{ padding: 18 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ flex: 1 }}>
+    <div className="flex items-center justify-between pt-3 flex-wrap gap-2">
+      <span className="text-xs text-gray-500">
+        Menampilkan <span className="text-gray-200 font-semibold">{from}–{to}</span> dari{' '}
+        <span className="text-gray-200 font-semibold">{total}</span> artikel
+      </span>
+      {lastPage > 1 && (
+        <div className="flex items-center gap-1">
+          <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1}
+            className={`${base} ${currentPage <= 1 ? 'bg-transparent border-gray-800 text-gray-700 cursor-not-allowed' : 'bg-white/4 border-gray-700 text-gray-400 hover:bg-white/8'}`}>
+            <ChevronLeft size={13} /><span className="hidden sm:inline">Prev</span>
+          </button>
+          {getPages().map((p, i) =>
+            p === '...'
+              ? <span key={`d${i}`} className="px-1 text-gray-600 text-xs">···</span>
+              : <button key={p} onClick={() => onPageChange(p)}
+                  className={`${base} ${p === currentPage ? 'bg-blue-600 border-blue-500 text-white shadow shadow-blue-900/40' : 'bg-white/4 border-gray-700 text-gray-400 hover:bg-white/8'}`}>
+                  {p}
+                </button>
+          )}
+          <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= lastPage}
+            className={`${base} ${currentPage >= lastPage ? 'bg-transparent border-gray-800 text-gray-700 cursor-not-allowed' : 'bg-white/4 border-gray-700 text-gray-400 hover:bg-white/8'}`}>
+            <span className="hidden sm:inline">Next</span><ChevronRight size={13} />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
-          {/* CATEGORY + TAGS */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              background: `${color}15`, border: `1px solid ${color}30`,
-              color, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600,
-            }}>
-              {CAT_ICON[category]}
-              {category}
+// ─── ArticleCard ──────────────────────────────────────────────
+const ArticleCard = ({ article, onEdit, onDelete, onRate }) => {
+  const navigate = useNavigate()
+  const cat      = getCat(article.category)
+  const author   = getAuthor(article)
+  const tags     = getTags(article)
+
+  return (
+    <div className="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3.5 hover:border-gray-600 hover:bg-gray-800/50 transition">
+      <div className="flex items-start justify-between gap-3">
+
+        {/* Left */}
+        <div className="flex-1 min-w-0">
+          {/* Category + Tags */}
+          <div className="flex gap-1.5 flex-wrap mb-2">
+            <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${cat.text} ${cat.bg} ${cat.border}`}>
+              {CAT_ICON[article.category]} {article.category ?? 'General'}
             </span>
             {tags.map((t, i) => (
-              <span key={`${article.id}-tag-${i}`} style={{
-                background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border}`,
-                color: T.textDim, padding: '2px 7px', borderRadius: 20, fontSize: 10,
-              }}>
-                #{t}
+              <span key={i} className="inline-flex items-center gap-1 text-[10px] text-gray-500 bg-white/4 border border-gray-700 px-2 py-0.5 rounded-full">
+                <Tag size={8} /> {t}
               </span>
             ))}
           </div>
 
-          {/* TITLE */}
-          <h3 style={{ color: T.text, fontWeight: 600, fontSize: 14, lineHeight: 1.45, margin: 0 }}>
+          {/* Title — clickable */}
+          <button
+            onClick={() => navigate(`/knowledge/${article.id}`)}
+            className="text-left text-gray-100 font-semibold text-sm leading-snug hover:text-blue-400 transition mb-2 w-full"
+          >
             {article.title}
-          </h3>
+          </button>
 
-          {/* META */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-            {[
-              [User, author ?? 'Unknown'],
-              [CalendarDays, article.date ?? '-'],
-              [Eye, `${article.views ?? 0} views`],
-            ].map(([Ic, v], i) => (
-              <span key={`meta-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 4, color: T.textDim, fontSize: 11 }}>
+          {/* Meta */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {[[User, author ?? 'Unknown'], [CalendarDays, article.date ?? '—'], [Eye, `${article.views ?? 0} views`]].map(([Ic, v], i) => (
+              <span key={i} className="flex items-center gap-1 text-gray-500 text-[11px]">
                 <Ic size={10} /> {v}
               </span>
             ))}
           </div>
-
         </div>
 
-        {/* RIGHT SIDE */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+        {/* Right */}
+        <div className="flex flex-col items-end gap-2.5 shrink-0">
+          {/* Rating — interactive */}
+          <StarRating
+            value={article.rating ?? 0}
+            onChange={(val) => onRate(article.id, val)}
+            size={12}
+          />
 
-          {/* RATING */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            {[1,2,3,4,5].map(i => (
-              <Star key={`star-${i}`} size={11}
-                fill={i <= Math.round(article.rating ?? 0) ? T.warning : 'none'}
-                color={T.warning}
-              />
-            ))}
-            <span style={{ color: T.textMuted, fontSize: 11, marginLeft: 4 }}>{article.rating ?? 0}</span>
-          </div>
-
-          {/* ACTION BUTTONS */}
-          <div style={{ display: 'flex', gap: 6 }}>
-            {/* Baca / View */}
-            <button
-              onClick={() => onView(article)}
-              title="Lihat artikel"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: T.accentSoft, border: `1px solid ${T.borderAccent}`,
-                color: T.accent, padding: '5px 10px', borderRadius: 8,
-                fontSize: 11, cursor: 'pointer', fontWeight: 600,
-              }}
-            >
+          {/* Actions */}
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => navigate(`/knowledge/${article.id}`)} title="Baca artikel"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[11px] font-semibold hover:bg-blue-500/25 transition">
               <BookOpen size={11} /> Baca
             </button>
-
-            {/* Edit */}
-            <button
-              onClick={() => onEdit(article)}
-              title="Edit artikel"
-              style={iconBtn(T.primary)}
-              onMouseEnter={(e) => (e.currentTarget.style.background = `${T.primary}15`)}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
+            <button onClick={() => onEdit(article)} title="Edit artikel"
+              className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-700 text-gray-400 hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 transition">
               <Edit2 size={11} />
             </button>
-
-            {/* Hapus */}
-            <button
-              onClick={() => onDelete(article)}
-              title="Hapus artikel"
-              style={iconBtn(T.danger)}
-              onMouseEnter={(e) => (e.currentTarget.style.background = `${T.danger}15`)}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
+            <button onClick={() => onDelete(article)} title="Hapus artikel"
+              className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-700 text-gray-400 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition">
               <Trash2 size={11} />
             </button>
           </div>
-
         </div>
+
       </div>
-    </Card>
+    </div>
   )
 }
 
-/* ─── Halaman Utama ──────────────────────────────────────── */
+// ─── KnowledgePage ────────────────────────────────────────────
 const KnowledgePage = () => {
   const { authFetch } = useAuth()
 
-  const [articles, setArticles]       = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [actionLoading, setActionLoading] = useState(false)
-
-  // Modal state
-  const [viewArticle, setViewArticle]     = useState(null)
-  const [editArticle, setEditArticle]     = useState(null) // null = tutup, false = baru, obj = edit
-  const [deleteArticle, setDeleteArticle] = useState(null)
-  const [toast, setToast]                 = useState(null)
+  const [articles,       setArticles]       = useState([])
+  const [loading,        setLoading]        = useState(true)
+  const [actionLoading,  setActionLoading]  = useState(false)
+  const [editArticle,    setEditArticle]    = useState(null)   // null=tutup, false=baru, obj=edit
+  const [deleteArticle,  setDeleteArticle]  = useState(null)
+  const [toast,          setToast]          = useState(null)
+  const [currentPage,    setCurrentPage]    = useState(1)
+  const PER_PAGE = 5
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
   }
 
-  /* ── Fetch Artikel ── */
+  // ── Fetch ──
   const fetchArticles = async () => {
     try {
       const res = await authFetch('/api/knowledge')
@@ -469,38 +315,28 @@ const KnowledgePage = () => {
       const data = await res.json()
       setArticles(Array.isArray(data.data) ? data.data : data)
     } catch (err) {
-      console.error('Fetch Knowledge Error:', err)
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
-
   useEffect(() => { fetchArticles() }, [])
 
-  /* ── Simpan (create / update) ── */
+  // ── Save ──
   const handleSave = async (id, form) => {
     setActionLoading(true)
     try {
       const isNew = id == null
       const res = await authFetch(
         isNew ? '/api/knowledge' : `/api/knowledge/${id}`,
-        {
-          method: isNew ? 'POST' : 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
+        { method: isNew ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }
       )
       if (!res.ok) throw new Error('Gagal menyimpan artikel')
-
       const saved = await res.json()
-      const savedArticle = saved.data ?? saved
-
       if (isNew) {
-        setArticles((prev) => [savedArticle, ...prev])
+        setArticles(p => [saved.data ?? saved, ...p])
       } else {
-        setArticles((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, ...form } : a))
-        )
+        setArticles(p => p.map(a => a.id === id ? { ...a, ...form } : a))
       }
       setEditArticle(null)
       showToast(isNew ? 'Artikel berhasil ditambahkan ✓' : 'Artikel berhasil diperbarui ✓')
@@ -511,15 +347,14 @@ const KnowledgePage = () => {
     }
   }
 
-  /* ── Hapus ── */
+  // ── Delete ──
   const handleDelete = async (id) => {
     setActionLoading(true)
     try {
       const res = await authFetch(`/api/knowledge/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Gagal menghapus artikel')
-      setArticles((prev) => prev.filter((a) => a.id !== id))
+      setArticles(p => p.filter(a => a.id !== id))
       setDeleteArticle(null)
-      setViewArticle(null)
       showToast('Artikel berhasil dihapus')
     } catch (err) {
       showToast(err.message, 'error')
@@ -528,63 +363,72 @@ const KnowledgePage = () => {
     }
   }
 
-  /* ── Search & Filter ── */
-  const { query, setQuery, results: searched } =
-    useSearch(articles, ['title', 'category'])
-
-  const { active, setActive, filtered } =
-    useFilter(searched, 'category')
-
-  const cats = ['All', ...new Set(articles.map((a) => a.category ?? 'General'))]
-
-  if (loading) {
-    return <div style={{ color: T.textMuted }}>Memuat artikel...</div>
+  // ── Rate ──
+  const handleRate = async (id, rating) => {
+    // Optimistic update
+    setArticles(p => p.map(a => a.id === id ? { ...a, rating } : a))
+    try {
+      await authFetch(`/api/knowledge/${id}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating }),
+      })
+    } catch {
+      showToast('Gagal menyimpan rating', 'error')
+    }
   }
 
+  // ── Search & Filter ──
+  const { query, setQuery, results: searched } = useSearch(articles, ['title', 'category'])
+  const { active, setActive, filtered }        = useFilter(searched, 'category')
+  const cats = ['All', ...new Set(articles.map(a => a.category ?? 'General'))]
+
+  // ── Pagination ──
+  useEffect(() => { setCurrentPage(1) }, [query, active])
+  const lastPage  = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE)
+
+  if (loading) return (
+    <div className="flex flex-col gap-3 animate-pulse">
+      {Array(5).fill(0).map((_, i) => <div key={i} className="h-20 bg-gray-800 rounded-xl" />)}
+    </div>
+  )
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="flex flex-col gap-5">
 
       <PageHeader
         title="Knowledge Base"
         subtitle={`${articles.length} artikel tersedia`}
-        action={
-          <PrimaryButton icon={Plus} onClick={() => setEditArticle(false)}>
-            Tambah Artikel
-          </PrimaryButton>
-        }
+        action={<PrimaryButton icon={Plus} onClick={() => setEditArticle(false)}>Tambah Artikel</PrimaryButton>}
       />
 
       <SearchBar value={query} onChange={setQuery} placeholder="Cari artikel..." />
 
       <FilterTabs tabs={cats} active={active} onChange={setActive} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {filtered.map((a) => (
+      <div className="flex flex-col gap-2.5">
+        {paginated.map(a => (
           <ArticleCard
-            key={`article-${a.id}`}
+            key={a.id}
             article={a}
-            onView={setViewArticle}
             onEdit={setEditArticle}
             onDelete={setDeleteArticle}
+            onRate={handleRate}
           />
         ))}
+        {filtered.length === 0 && <EmptyState icon={BookOpen} message="Tidak ada artikel ditemukan" />}
 
-        {filtered.length === 0 && (
-          <EmptyState icon={BookOpen} message="Tidak ada artikel ditemukan" />
-        )}
+        <Pagination
+          currentPage={currentPage}
+          lastPage={lastPage}
+          total={filtered.length}
+          perPage={PER_PAGE}
+          onPageChange={(p) => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+        />
       </div>
 
-      {/* Modal View */}
-      {viewArticle && (
-        <ViewModal
-          article={viewArticle}
-          onClose={() => setViewArticle(null)}
-          onEdit={() => { setViewArticle(null); setEditArticle(viewArticle) }}
-          onDelete={() => { setViewArticle(null); setDeleteArticle(viewArticle) }}
-        />
-      )}
-
-      {/* Modal Edit / Tambah */}
+      {/* Edit Modal */}
       {editArticle !== null && (
         <EditModal
           article={editArticle || null}
@@ -594,7 +438,7 @@ const KnowledgePage = () => {
         />
       )}
 
-      {/* Modal Hapus */}
+      {/* Delete Modal */}
       {deleteArticle && (
         <DeleteModal
           article={deleteArticle}
@@ -604,9 +448,7 @@ const KnowledgePage = () => {
         />
       )}
 
-      {/* Toast */}
       {toast && <Toast message={toast.message} type={toast.type} />}
-
     </div>
   )
 }

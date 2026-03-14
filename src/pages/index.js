@@ -11,3 +11,4 @@ export { default as SettingsPage }   from './SettingsPage'
 // Detail Pages
 export { default as TicketDetailPage } from './TicketDetailPage'
 export { default as AssetDetailPage } from './AssetDetailPage'
+export { default as KnowledgeDetailPage } from './KnowledgeDetailPage'
