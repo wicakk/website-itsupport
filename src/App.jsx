@@ -13,6 +13,7 @@ import {
   ReportsPage,
   UsersPage,
   SettingsPage,
+  TicketDetailPage,
 } from "./pages"
 
 function ProtectedRoutes() {
@@ -35,6 +36,8 @@ function ProtectedRoutes() {
         <Route path="/settings" element={<SettingsPage />} />
 
         <Route path="*" element={<Navigate to="/dashboard" />} />
+
+        <Route path="/tickets/:id" element={<TicketDetailPage />} />
       </Routes>
     </AppLayout>
   )

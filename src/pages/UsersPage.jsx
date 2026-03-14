@@ -14,24 +14,25 @@ import {
 
 import useSearch from '../hooks/useSearch'
 
-/* ─── Modal Edit ─────────────────────────────────────────── */
-function EditModal({ user, onClose, onSave, loading }) {
+/* ─── Modal Tambah User ─────────────────────────────────────────── */
+function AddUserModal({ onClose, onSave, loading }) {
   const [form, setForm] = useState({
-    name: user.name ?? '',
-    email: user.email ?? '',
-    department: user.department ?? '',
-    role: user.role ?? 'User',
-    is_active: user.is_active ?? true, // pakai boolean
-  })
+    name: '',
+    email: '',
+    department: '',
+    role: 'user, super_admin, manager_it, it_support',
+    is_active: true,
+    password: '',
+    password_confirmation: '',
+  });
 
   const setField = (key) => (e) => {
-    // khusus untuk is_active mapping dari select string ke boolean
     if (key === 'is_active') {
-      setForm((f) => ({ ...f, [key]: e.target.value === 'Active' }))
+      setForm((f) => ({ ...f, [key]: e.target.value === 'Active' }));
     } else {
-      setForm((f) => ({ ...f, [key]: e.target.value }))
+      setForm((f) => ({ ...f, [key]: e.target.value }));
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
@@ -39,15 +40,12 @@ function EditModal({ user, onClose, onSave, loading }) {
         className="bg-slate-900 rounded-xl w-[440px] max-w-[90vw] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex justify-between items-center px-5 py-4 border-b border-slate-700">
-          <h3 className="text-sm font-bold text-white">Edit User</h3>
+          <h3 className="text-sm font-bold text-white">Tambah User</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
             <X size={16} />
           </button>
         </div>
-
-        {/* Body */}
         <div className="p-5 flex flex-col gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Nama</label>
@@ -74,6 +72,24 @@ function EditModal({ user, onClose, onSave, loading }) {
               onChange={setField('department')}
             />
           </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Password</label>
+            <input
+              type="password"
+              className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm outline-none"
+              value={form.password}
+              onChange={setField('password')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Konfirmasi Password</label>
+            <input
+              type="password"
+              className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm outline-none"
+              value={form.password_confirmation}
+              onChange={setField('password_confirmation')}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Role</label>
@@ -83,7 +99,7 @@ function EditModal({ user, onClose, onSave, loading }) {
                 onChange={setField('role')}
               >
                 {Object.keys(ROLE_CFG).map((r) => (
-                  <option key={r}>{r}</option>
+                  <option key={r} value={r}>{r}</option>
                 ))}
               </select>
             </div>
@@ -100,8 +116,123 @@ function EditModal({ user, onClose, onSave, loading }) {
             </div>
           </div>
         </div>
+        <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-700">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-3 py-1 rounded border border-slate-700 text-white text-sm hover:bg-slate-700 disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={() => onSave(form)}
+            disabled={loading}
+            className={`px-3 py-1 rounded bg-indigo-600 text-white text-sm font-semibold flex items-center gap-1 ${
+              loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-indigo-500'
+            }`}
+          >
+            <Save size={12} />
+            {loading ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* Footer */}
+/* ─── Modal Edit User ─────────────────────────────────────────── */
+function EditModal({ user, onClose, onSave, loading }) {
+  const [form, setForm] = useState({
+    name: user.name ?? '',
+    email: user.email ?? '',
+    department: user.department ?? '',
+    role: user.role ?? 'user, super_admin, manager_it, it_support',
+    is_active: user.is_active ?? true,
+    password: '',
+  });
+
+  const setField = (key) => (e) => {
+    if (key === 'is_active') {
+      setForm((f) => ({ ...f, [key]: e.target.value === 'Active' }));
+    } else {
+      setForm((f) => ({ ...f, [key]: e.target.value }));
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="bg-slate-900 rounded-xl w-[440px] max-w-[90vw] shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center px-5 py-4 border-b border-slate-700">
+          <h3 className="text-sm font-bold text-white">Edit User</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Nama</label>
+            <input
+              className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm outline-none"
+              value={form.name}
+              onChange={setField('name')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Email</label>
+            <input
+              type="email"
+              className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm outline-none"
+              value={form.email}
+              onChange={setField('email')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Department</label>
+            <input
+              className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm outline-none"
+              value={form.department}
+              onChange={setField('department')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Password (kosong jika tidak ingin ganti)</label>
+            <input
+              type="password"
+              className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm outline-none"
+              value={form.password}
+              onChange={setField('password')}
+              placeholder="Biarkan kosong jika tidak ingin ganti"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Role</label>
+              <select
+                className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm"
+                value={form.role}
+                onChange={setField('role')}
+              >
+                {Object.keys(ROLE_CFG).map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Status</label>
+              <select
+                className="w-full px-2 py-2 rounded border border-slate-700 bg-slate-800 text-white text-sm"
+                value={form.is_active ? 'Active' : 'Inactive'}
+                onChange={setField('is_active')}
+              >
+                <option>Active</option>
+                <option>Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-700">
           <button
             onClick={onClose}
@@ -126,7 +257,7 @@ function EditModal({ user, onClose, onSave, loading }) {
   )
 }
 
-/* ─── Modal Hapus ───────────────────────────────────────── */
+/* ─── Modal Hapus User ─────────────────────────────────────────── */
 function DeleteModal({ user, onClose, onConfirm, loading }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
@@ -175,7 +306,7 @@ function Toast({ message, type = 'success' }) {
   )
 }
 
-/* ─── Halaman Utama ─────────────────────────────────────── */
+/* ─── Halaman Utama UsersPage ─────────────────────────────────────── */
 function UsersPage() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
@@ -183,6 +314,7 @@ function UsersPage() {
 
   const [editUser, setEditUser] = useState(null)
   const [deleteUser, setDeleteUser] = useState(null)
+  const [addUserModal, setAddUserModal] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState(null)
 
@@ -199,6 +331,7 @@ function UsersPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  /* Load users */
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
@@ -206,9 +339,7 @@ function UsersPage() {
       try {
         const token = localStorage.getItem('token')
         if(!token) throw new Error('Belum login')
-
         const headers = { Accept:'application/json', Authorization:`Bearer ${token}` }
-
         const [resUsers, resTickets] = await Promise.all([
           fetch('http://localhost:8000/api/users', {headers}),
           fetch('http://localhost:8000/api/tickets', {headers})
@@ -237,18 +368,55 @@ function UsersPage() {
     loadData()
   },[])
 
+  /* ─── Handlers ───────────────────────────────────── */
+  const handleAddUser = async (form) => {
+    setActionLoading(true)
+
+    if(form.password !== form.password_confirmation) {
+      showToast('Password dan konfirmasi tidak cocok', 'error')
+      setActionLoading(false)
+      return
+    }
+
+    if(!Object.keys(ROLE_CFG).includes(form.role)){
+      showToast('Role tidak valid', 'error')
+      setActionLoading(false)
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('http://localhost:8000/api/users', {
+        method:'POST',
+        headers:{Accept:'application/json','Content-Type':'application/json', Authorization:`Bearer ${token}`},
+        body: JSON.stringify(form)
+      })
+      const data = await res.json()
+      if(!res.ok) throw new Error(data.message || 'Gagal menambahkan user')
+      setUsers(prev => [...prev, {...data.data, tickets:0}])
+      setAddUserModal(false)
+      showToast('User berhasil ditambahkan ✓')
+    }catch(err){
+      showToast(err.message,'error')
+    }finally{
+      setActionLoading(false)
+    }
+  }
+
   const handleSave = async (id, form) => {
     setActionLoading(true)
     try {
       const token = localStorage.getItem('token')
+      let payload = { ...form }
+      if(!payload.password) delete payload.password // jangan kirim password kosong
       const res = await fetch(`http://localhost:8000/api/users/${id}`,{
         method:'PUT',
         headers:{Accept:'application/json','Content-Type':'application/json',Authorization:`Bearer ${token}`},
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       })
       const data = await res.json()
       if(!res.ok) throw new Error(data.message || 'Gagal menyimpan')
-      setUsers(prev=>prev.map(u=>u.id===id?{...u,...form}:u))
+      setUsers(prev=>prev.map(u=>u.id===id?{...u,...form, password: undefined}:u))
       setEditUser(null)
       showToast('User berhasil diperbarui ✓')
     }catch(err){
@@ -282,8 +450,9 @@ function UsersPage() {
       <PageHeader
         title="User Management"
         subtitle={loading?'Memuat...':error?'Gagal memuat data':`${users.length} pengguna terdaftar`}
-        action={<PrimaryButton icon={Plus}>Tambah User</PrimaryButton>}
+        action={<PrimaryButton icon={Plus} onClick={()=>setAddUserModal(true)}>Tambah User</PrimaryButton>}
       />
+
       <SearchBar value={query} onChange={setQuery} placeholder="Cari nama, email, department..." disabled={loading} />
       {error && <div className="p-3 rounded bg-red-100 text-red-600 text-xs">{error}</div>}
 
@@ -344,6 +513,8 @@ function UsersPage() {
         </div>
       )}
 
+      {/* Modals */}
+      {addUserModal && <AddUserModal onClose={()=>!actionLoading&&setAddUserModal(false)} onSave={handleAddUser} loading={actionLoading}/>}
       {editUser && <EditModal user={editUser} onClose={()=>!actionLoading&&setEditUser(null)} onSave={handleSave} loading={actionLoading}/>}
       {deleteUser && <DeleteModal user={deleteUser} onClose={()=>!actionLoading&&setDeleteUser(null)} onConfirm={handleDelete} loading={actionLoading}/>}
       {toast && <Toast message={toast.message} type={toast.type}/>}
