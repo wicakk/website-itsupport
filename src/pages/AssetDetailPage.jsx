@@ -6,9 +6,9 @@ import {
   Server, Monitor, Globe, User, Shield, QrCode, TrendingDown,
   CalendarClock, Download, Printer as PrintIcon, Calendar, Clock,
   Bell, CheckCheck, AlertCircle, BarChart3, ClipboardList, Plus,
-  Pencil, Trash2, X, AlertTriangle, CheckCircle2,
+  Pencil, Trash2, X, AlertTriangle,
 } from 'lucide-react'
-import { T, ASSET_STATUS_CFG } from '../theme'
+import { ASSET_STATUS_CFG } from '../theme'
 import { Badge } from '../components/ui'
 import { useAuth } from '../context/AppContext'
 
@@ -18,57 +18,14 @@ const STATUSES     = ['Active', 'Maintenance', 'Inactive', 'Disposed']
 const PM_INTERVALS = ['Mingguan', 'Bulanan', '3 Bulan', '6 Bulan', 'Tahunan']
 
 const CAT_CFG = {
-  Laptop:  { icon: <Laptop  size={20} />, color: '#3B8BFF' },
-  Desktop: { icon: <Monitor size={20} />, color: '#10B981' },
-  Printer: { icon: <Printer size={20} />, color: '#8B5CF6' },
-  Network: { icon: <Network size={20} />, color: '#06B6D4' },
-  Server:  { icon: <Server  size={20} />, color: '#F59E0B' },
-  Phone:   { icon: <Package size={20} />, color: '#EC4899' },
-  Monitor: { icon: <Monitor size={20} />, color: '#14B8A6' },
-  Others:  { icon: <Package size={20} />, color: '#94A3B8' },
-}
-
-// ─── Styles ───────────────────────────────────────────────────
-const s = {
-  input: {
-    background: 'rgba(255,255,255,0.05)',
-    border: `1px solid ${T.border}`,
-    borderRadius: 8, padding: '8px 12px',
-    color: T.text, fontSize: 13, outline: 'none',
-    width: '100%', boxSizing: 'border-box',
-  },
-  label: {
-    color: T.textMuted, fontSize: 11, fontWeight: 600,
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-    marginBottom: 5, display: 'block',
-  },
-  sectionHeading: {
-    color: T.text, fontWeight: 700, fontSize: 13,
-    display: 'flex', alignItems: 'center', gap: 7,
-    paddingBottom: 10, borderBottom: `1px solid ${T.border}`, marginBottom: 14,
-  },
-  pill: (color) => ({
-    background: `${color}18`, border: `1px solid ${color}35`,
-    color, padding: '2px 10px', borderRadius: 20,
-    fontSize: 11, fontWeight: 600,
-    display: 'inline-flex', alignItems: 'center', gap: 4,
-  }),
-  btn: (variant = 'primary') => {
-    const v = {
-      primary: { background: T.accent,             border: 'none',                           color: '#fff'     },
-      ghost:   { background: 'transparent',         border: `1px solid ${T.border}`,          color: T.textMuted },
-      warning: { background: `${T.warning}20`,      border: `1px solid ${T.warning}40`,       color: T.warning  },
-      success: { background: `${T.success}18`,      border: `1px solid ${T.success}35`,       color: T.success  },
-      danger:  { background: `${T.danger}18`,       border: `1px solid ${T.danger}35`,        color: T.danger   },
-    }
-    return { ...v[variant], padding: '8px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }
-  },
-  iconBtn: (color = T.textMuted, bg = 'rgba(255,255,255,0.04)') => ({
-    width: 30, height: 30, borderRadius: 8,
-    background: bg, border: `1px solid ${color}30`,
-    color, cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  }),
+  Laptop:  { icon: <Laptop  size={22} />, color: 'text-blue-400',   bg: 'bg-blue-400/10',   border: 'border-blue-400/20'   },
+  Desktop: { icon: <Monitor size={22} />, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
+  Printer: { icon: <Printer size={22} />, color: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'border-violet-400/20'  },
+  Network: { icon: <Network size={22} />, color: 'text-cyan-400',    bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20'    },
+  Server:  { icon: <Server  size={22} />, color: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'border-amber-400/20'   },
+  Phone:   { icon: <Package size={22} />, color: 'text-pink-400',    bg: 'bg-pink-400/10',    border: 'border-pink-400/20'    },
+  Monitor: { icon: <Monitor size={22} />, color: 'text-teal-400',    bg: 'bg-teal-400/10',    border: 'border-teal-400/20'    },
+  Others:  { icon: <Package size={22} />, color: 'text-slate-400',   bg: 'bg-slate-400/10',   border: 'border-slate-400/20'   },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -89,31 +46,49 @@ function calcSYD(cost, salvage, life) {
   })
 }
 
-// ─── Sub-components ───────────────────────────────────────────
+const inputCls = (err) =>
+  `w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition ${
+    err ? 'border-red-500' : 'border-gray-700'
+  }`
+
+// ─── Field ────────────────────────────────────────────────────
 const Field = ({ label, error, children, span }) => (
-  <div style={span ? { gridColumn: '1 / -1' } : {}}>
-    <label style={s.label}>{label}</label>
+  <div className={span ? 'col-span-2' : ''}>
+    <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+      {label}
+    </label>
     {children}
-    {error && <div style={{ color: T.danger, fontSize: 11, marginTop: 3 }}>{error}</div>}
+    {error && <p className="text-red-400 text-[11px] mt-1">{error}</p>}
   </div>
 )
 
-// ─── Modal (for edit) ─────────────────────────────────────────
-const Modal = ({ onClose, children, maxWidth = 600 }) => (
-  <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-    <div onClick={e => e.stopPropagation()} style={{ background: T.surface ?? '#13161f', border: `1px solid ${T.border}`, borderRadius: 18, padding: 26, width: '100%', maxWidth, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
+// ─── Modal ────────────────────────────────────────────────────
+const Modal = ({ onClose, children, maxWidth = 'max-w-xl' }) => (
+  <div
+    onClick={onClose}
+    className="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      className={`bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full ${maxWidth} max-h-[92vh] overflow-y-auto shadow-2xl`}
+    >
       {children}
     </div>
   </div>
 )
 
 const ModalHeader = ({ title, subtitle, onClose }) => (
-  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 22 }}>
+  <div className="flex items-start justify-between mb-5">
     <div>
-      <div style={{ color: T.text, fontWeight: 700, fontSize: 16 }}>{title}</div>
-      {subtitle && <div style={{ color: T.textMuted, fontSize: 12, marginTop: 3 }}>{subtitle}</div>}
+      <p className="text-gray-100 font-bold text-base">{title}</p>
+      {subtitle && <p className="text-gray-400 text-xs mt-0.5">{subtitle}</p>}
     </div>
-    <button onClick={onClose} style={{ ...s.iconBtn(), width: 32, height: 32 }}><X size={14} /></button>
+    <button
+      onClick={onClose}
+      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-gray-700 text-gray-400 hover:bg-white/10 transition"
+    >
+      <X size={14} />
+    </button>
   </div>
 )
 
@@ -126,8 +101,8 @@ const EMPTY_FORM = {
 }
 
 const AssetFormModal = ({ onClose, onSaved, editAsset }) => {
-  const { authFetch }   = useAuth()
-  const [form, setForm] = useState({ ...EMPTY_FORM, ...editAsset })
+  const { authFetch }       = useAuth()
+  const [form, setForm]     = useState({ ...EMPTY_FORM, ...editAsset })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
 
@@ -161,58 +136,61 @@ const AssetFormModal = ({ onClose, onSaved, editAsset }) => {
   }
 
   return (
-    <Modal onClose={onClose} maxWidth={560}>
+    <Modal onClose={onClose} maxWidth="max-w-lg">
       <ModalHeader title="Edit Aset" subtitle={`${editAsset.asset_number} · ${editAsset.serial_number}`} onClose={onClose} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div className="grid grid-cols-2 gap-3.5">
         <Field label="Nama Aset" error={errors.name} span>
-          <input style={{ ...s.input, ...(errors.name ? { borderColor: T.danger } : {}) }} placeholder="cth: Dell Latitude 5420" value={form.name} onChange={e => set('name', e.target.value)} />
+          <input className={inputCls(errors.name)} placeholder="cth: Dell Latitude 5420" value={form.name} onChange={e => set('name', e.target.value)} />
         </Field>
         <Field label="Kategori">
-          <select style={s.input} value={form.category} onChange={e => set('category', e.target.value)}>
+          <select className={inputCls()} value={form.category} onChange={e => set('category', e.target.value)}>
             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
           </select>
         </Field>
         <Field label="Status">
-          <select style={s.input} value={form.status} onChange={e => set('status', e.target.value)}>
+          <select className={inputCls()} value={form.status} onChange={e => set('status', e.target.value)}>
             {STATUSES.map(st => <option key={st}>{st}</option>)}
           </select>
         </Field>
         <Field label="Brand">
-          <input style={s.input} placeholder="Dell" value={form.brand} onChange={e => set('brand', e.target.value)} />
+          <input className={inputCls()} placeholder="Dell" value={form.brand} onChange={e => set('brand', e.target.value)} />
         </Field>
         <Field label="Model">
-          <input style={s.input} placeholder="Latitude 5420" value={form.model} onChange={e => set('model', e.target.value)} />
+          <input className={inputCls()} placeholder="Latitude 5420" value={form.model} onChange={e => set('model', e.target.value)} />
         </Field>
         <Field label="Serial Number" error={errors.serial_number}>
-          <input style={{ ...s.input, ...(errors.serial_number ? { borderColor: T.danger } : {}) }} value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
+          <input className={inputCls(errors.serial_number)} value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
         </Field>
         <Field label="Lokasi" error={errors.location}>
-          <input style={{ ...s.input, ...(errors.location ? { borderColor: T.danger } : {}) }} placeholder="Ruang IT Lt. 2" value={form.location} onChange={e => set('location', e.target.value)} />
+          <input className={inputCls(errors.location)} placeholder="Ruang IT Lt. 2" value={form.location} onChange={e => set('location', e.target.value)} />
         </Field>
         <Field label="Pengguna">
-          <input style={s.input} placeholder="(opsional)" value={form.user} onChange={e => set('user', e.target.value)} />
+          <input className={inputCls()} placeholder="(opsional)" value={form.user} onChange={e => set('user', e.target.value)} />
         </Field>
         <Field label="Tgl Beli">
-          <input type="date" style={s.input} value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} />
+          <input type="date" className={inputCls()} value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} />
         </Field>
         <Field label="Harga Beli (Rp)">
-          <input type="number" style={s.input} value={form.purchase_price} onChange={e => set('purchase_price', e.target.value)} />
+          <input type="number" className={inputCls()} value={form.purchase_price} onChange={e => set('purchase_price', e.target.value)} />
         </Field>
         <Field label="Garansi s/d" span>
-          <input type="date" style={s.input} value={form.warranty_expiry} onChange={e => set('warranty_expiry', e.target.value)} />
+          <input type="date" className={inputCls()} value={form.warranty_expiry} onChange={e => set('warranty_expiry', e.target.value)} />
         </Field>
         <Field label="Catatan" span>
-          <input style={s.input} placeholder="(opsional)" value={form.notes} onChange={e => set('notes', e.target.value)} />
+          <input className={inputCls()} placeholder="(opsional)" value={form.notes} onChange={e => set('notes', e.target.value)} />
         </Field>
       </div>
       {errors._global && (
-        <div style={{ marginTop: 12, padding: '8px 12px', background: `${T.danger}18`, border: `1px solid ${T.danger}40`, borderRadius: 8, color: T.danger, fontSize: 12 }}>
+        <div className="mt-3 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs">
           {errors._global}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-        <button onClick={onClose} style={s.btn('ghost')}>Batal</button>
-        <button onClick={handleSubmit} disabled={saving} style={{ ...s.btn('primary'), opacity: saving ? 0.7 : 1 }}>
+      <div className="flex gap-2 justify-end mt-5">
+        <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+          Batal
+        </button>
+        <button onClick={handleSubmit} disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
           {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </div>
@@ -229,22 +207,20 @@ const TABS = [
 ]
 
 const TabBar = ({ active, onChange }) => (
-  <div style={{ display: 'flex', gap: 4, marginBottom: 22, borderBottom: `1px solid ${T.border}` }}>
-    {TABS.map(({ id, label, icon }) => {
-      const isActive = active === id
-      return (
-        <button key={id} onClick={() => onChange(id)} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 14px', borderRadius: '8px 8px 0 0', border: 'none',
-          background: isActive ? `${T.accent}18` : 'transparent',
-          color: isActive ? T.accent : T.textMuted,
-          fontWeight: isActive ? 700 : 400, fontSize: 12, cursor: 'pointer',
-          borderBottom: isActive ? `2px solid ${T.accent}` : '2px solid transparent',
-        }}>
-          {icon} {label}
-        </button>
-      )
-    })}
+  <div className="flex gap-1 mb-5 border-b border-gray-700">
+    {TABS.map(({ id, label, icon }) => (
+      <button
+        key={id}
+        onClick={() => onChange(id)}
+        className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-t-lg border-b-2 transition cursor-pointer
+          ${active === id
+            ? 'bg-blue-500/10 text-blue-400 border-blue-500 font-bold'
+            : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5'
+          }`}
+      >
+        {icon} {label}
+      </button>
+    ))}
   </div>
 )
 
@@ -258,23 +234,23 @@ const InfoTab = ({ asset }) => {
     ['Lokasi',        asset.location],
     ['Pengguna',      asset.user || '—'],
     ['Garansi s/d',   asset.warranty_expiry
-      ? <span style={{ color: expired ? T.danger : T.success }}>{asset.warranty_expiry} {expired ? '(Expired)' : ''}</span>
+      ? <span className={expired ? 'text-red-400' : 'text-emerald-400'}>{asset.warranty_expiry}{expired ? ' (Expired)' : ''}</span>
       : '—'],
     ['Harga Beli',    asset.purchase_price ? `Rp ${formatRp(asset.purchase_price)}` : '—'],
     ['Tgl Beli',      asset.purchase_date || '—'],
   ]
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+    <div className="grid grid-cols-2 gap-3">
       {fields.map(([k, v]) => (
-        <div key={k} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '10px 14px' }}>
-          <div style={{ ...s.label, marginBottom: 4 }}>{k}</div>
-          <div style={{ color: T.text, fontSize: 13, fontWeight: 600 }}>{v || '—'}</div>
+        <div key={k} className="bg-white/[0.03] rounded-xl px-3.5 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1">{k}</p>
+          <p className="text-gray-200 text-sm font-semibold">{v || '—'}</p>
         </div>
       ))}
       {asset.notes && (
-        <div style={{ gridColumn: '1/-1', background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '10px 14px' }}>
-          <div style={{ ...s.label, marginBottom: 4 }}>Catatan</div>
-          <div style={{ color: T.textMuted, fontSize: 13 }}>{asset.notes}</div>
+        <div className="col-span-2 bg-white/[0.03] rounded-xl px-3.5 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1">Catatan</p>
+          <p className="text-gray-400 text-sm">{asset.notes}</p>
         </div>
       )}
     </div>
@@ -288,7 +264,7 @@ const QRCanvas = ({ value, size = 200 }) => {
     if (!canvasRef.current) return
     QRCode.toCanvas(canvasRef.current, value, { width: size, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
   }, [value, size])
-  return <canvas ref={canvasRef} style={{ borderRadius: 8 }} />
+  return <canvas ref={canvasRef} className="rounded-lg" />
 }
 
 const QRTab = ({ asset }) => {
@@ -310,21 +286,29 @@ const QRTab = ({ asset }) => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-      <div id="qr-preview" style={{ background: '#fff', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+    <div className="flex flex-col items-center gap-5">
+      <div id="qr-preview" className="bg-white rounded-2xl p-6 flex flex-col items-center gap-3 shadow-2xl">
         <QRCanvas value={qrValue} size={200} />
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ color: '#0f172a', fontWeight: 800, fontSize: 14, fontFamily: 'monospace' }}>{asset.asset_number}</div>
-          <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{asset.name}</div>
-          <div style={{ color: '#94a3b8', fontSize: 10 }}>{asset.serial_number} · {asset.location}</div>
+        <div className="text-center">
+          <p className="text-slate-900 font-extrabold text-sm font-mono">{asset.asset_number}</p>
+          <p className="text-slate-500 text-[11px] mt-0.5">{asset.name}</p>
+          <p className="text-slate-400 text-[10px]">{asset.serial_number} · {asset.location}</p>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={handlePrint} style={s.btn('primary')}><PrintIcon size={14} /> Print QR</button>
-        <button onClick={handleDownload} style={s.btn('ghost')}><Download size={14} /> Download PNG</button>
+
+      <div className="flex gap-2.5">
+        <button onClick={handlePrint}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition">
+          <PrintIcon size={14} /> Print QR
+        </button>
+        <button onClick={handleDownload}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+          <Download size={14} /> Download PNG
+        </button>
       </div>
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 10, padding: '12px 16px', width: '100%', fontSize: 11, color: T.textMuted, fontFamily: 'monospace', wordBreak: 'break-all' }}>
-        <div style={{ color: T.textDim, marginBottom: 4 }}>Data encoded:</div>
+
+      <div className="bg-white/[0.03] border border-gray-700 rounded-xl p-3.5 w-full text-[11px] text-gray-500 font-mono break-all">
+        <p className="text-gray-600 mb-1">Data encoded:</p>
         {qrValue}
       </div>
     </div>
@@ -335,50 +319,67 @@ const QRTab = ({ asset }) => {
 const DepTab = ({ asset }) => {
   const [form, setForm] = useState({ cost: asset.purchase_price ?? '', salvage: '', life: '' })
   const [rows, setRows] = useState([])
+
   const handleCalc = () => {
     const { cost, salvage, life } = form
     if (!cost || !salvage || !life) return
     setRows(calcSYD(+cost, +salvage, +life))
   }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={s.sectionHeading}><TrendingDown size={14} color={T.warning} /> Sum of Years Digits (SYD)</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-        {[['Harga Perolehan (Rp)', 'cost', 'contoh: 15000000'], ['Nilai Sisa (Rp)', 'salvage', 'contoh: 1500000'], ['Masa Manfaat (Thn)', 'life', 'contoh: 5']].map(([label, key, ph]) => (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 text-sm font-bold text-gray-200 pb-2.5 border-b border-gray-700">
+        <TrendingDown size={14} className="text-amber-400" /> Sum of Years Digits (SYD)
+      </div>
+
+      <div className="grid grid-cols-3 gap-2.5">
+        {[['Harga Perolehan (Rp)', 'cost', 'contoh: 15000000'],
+          ['Nilai Sisa (Rp)',      'salvage', 'contoh: 1500000'],
+          ['Masa Manfaat (Thn)',   'life',    'contoh: 5']].map(([label, key, ph]) => (
           <div key={key}>
-            <label style={s.label}>{label}</label>
-            <input style={s.input} type="number" placeholder={ph} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">{label}</label>
+            <input type="number" className={inputCls()} placeholder={ph} value={form[key]}
+              onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
           </div>
         ))}
       </div>
-      <button onClick={handleCalc} style={{ ...s.btn('warning'), alignSelf: 'flex-start' }}><BarChart3 size={14} /> Hitung Depresiasi</button>
+
+      <button onClick={handleCalc}
+        className="self-start flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 text-sm font-semibold hover:bg-amber-500/30 transition">
+        <BarChart3 size={14} /> Hitung Depresiasi
+      </button>
+
       {rows.length > 0 && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            {[['Total Depresiasi', `Rp ${formatRp(+form.cost - +form.salvage)}`, T.danger], ['Nilai Sisa', `Rp ${formatRp(+form.salvage)}`, T.success], ['Depresiasi Thn 1', `Rp ${formatRp(rows[0]?.depreciation)}`, T.accent]].map(([k, v, c]) => (
-              <div key={k} style={{ background: `${c}12`, border: `1px solid ${c}25`, borderRadius: 10, padding: '10px 14px' }}>
-                <div style={{ ...s.label, color: `${c}aa` }}>{k}</div>
-                <div style={{ color: c, fontWeight: 700, fontSize: 14 }}>{v}</div>
+          <div className="grid grid-cols-3 gap-2.5">
+            {[['Total Depresiasi', `Rp ${formatRp(+form.cost - +form.salvage)}`, 'text-red-400',  'bg-red-400/10   border-red-400/20'],
+              ['Nilai Sisa',       `Rp ${formatRp(+form.salvage)}`,              'text-emerald-400', 'bg-emerald-400/10 border-emerald-400/20'],
+              ['Depresiasi Thn 1', `Rp ${formatRp(rows[0]?.depreciation)}`,      'text-blue-400', 'bg-blue-400/10  border-blue-400/20'],
+            ].map(([k, v, textCls, bgCls]) => (
+              <div key={k} className={`rounded-xl px-3.5 py-2.5 border ${bgCls}`}>
+                <p className={`text-[10px] font-semibold uppercase tracking-widest mb-1 opacity-70 ${textCls}`}>{k}</p>
+                <p className={`font-bold text-sm ${textCls}`}>{v}</p>
               </div>
             ))}
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${T.border}` }}>
+
+          <div className="overflow-x-auto rounded-xl border border-gray-700">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-800">
+                <tr>
                   {['Tahun', 'Faktor', 'Depresiasi (Rp)', 'Akumulasi (Rp)', 'Nilai Buku (Rp)'].map(h => (
-                    <th key={h} style={{ padding: '8px 10px', color: T.textMuted, textAlign: 'right', fontWeight: 600 }}>{h}</th>
+                    <th key={h} className="px-3 py-2.5 text-right text-gray-400 font-semibold">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${T.border}30`, background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                    <td style={{ padding: '8px 10px', color: T.accent, fontWeight: 700, textAlign: 'right' }}>{r.year}</td>
-                    <td style={{ padding: '8px 10px', color: T.textMuted, textAlign: 'right', fontFamily: 'monospace' }}>{r.factor}</td>
-                    <td style={{ padding: '8px 10px', color: T.danger, textAlign: 'right' }}>{formatRp(r.depreciation)}</td>
-                    <td style={{ padding: '8px 10px', color: T.textDim, textAlign: 'right' }}>{formatRp(r.accumulated)}</td>
-                    <td style={{ padding: '8px 10px', color: T.text, fontWeight: 600, textAlign: 'right' }}>{formatRp(r.bookValue)}</td>
+                  <tr key={i} className={`border-t border-gray-800 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
+                    <td className="px-3 py-2 text-right text-blue-400 font-bold">{r.year}</td>
+                    <td className="px-3 py-2 text-right text-gray-500 font-mono">{r.factor}</td>
+                    <td className="px-3 py-2 text-right text-red-400">{formatRp(r.depreciation)}</td>
+                    <td className="px-3 py-2 text-right text-gray-400">{formatRp(r.accumulated)}</td>
+                    <td className="px-3 py-2 text-right text-gray-200 font-semibold">{formatRp(r.bookValue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -386,8 +387,9 @@ const DepTab = ({ asset }) => {
           </div>
         </>
       )}
+
       {rows.length === 0 && (
-        <div style={{ textAlign: 'center', color: T.textMuted, fontSize: 12, padding: '30px 0', border: `1px dashed ${T.border}`, borderRadius: 10 }}>
+        <div className="text-center text-gray-500 text-xs py-8 border border-dashed border-gray-700 rounded-xl">
           Isi harga perolehan, nilai sisa, dan masa manfaat lalu klik Hitung
         </div>
       )}
@@ -403,7 +405,6 @@ const PMTab = ({ asset, onRefresh }) => {
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
-  // Sync when asset prop refreshes
   useEffect(() => { setPmList(asset.pm_schedules ?? []) }, [asset.pm_schedules])
 
   const handleAdd = async () => {
@@ -427,71 +428,111 @@ const PMTab = ({ asset, onRefresh }) => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={s.sectionHeading}><CalendarClock size={14} color={T.accent} /> Tambah Jadwal Maintenance</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <div style={{ gridColumn: '1/-1' }}>
-          <label style={s.label}>Judul Maintenance</label>
-          <input style={s.input} placeholder="cth: Cleaning & Thermal Paste" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+    <div className="flex flex-col gap-4">
+      {/* Add form */}
+      <div className="flex items-center gap-2 text-sm font-bold text-gray-200 pb-2.5 border-b border-gray-700">
+        <CalendarClock size={14} className="text-blue-400" /> Tambah Jadwal Maintenance
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="col-span-2">
+          <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Judul Maintenance</label>
+          <input className={inputCls()} placeholder="cth: Cleaning & Thermal Paste" value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
         </div>
         <div>
-          <label style={s.label}>Interval</label>
-          <select style={s.input} value={form.interval} onChange={e => setForm(f => ({ ...f, interval: e.target.value }))}>
+          <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Interval</label>
+          <select className={inputCls()} value={form.interval} onChange={e => setForm(f => ({ ...f, interval: e.target.value }))}>
             {PM_INTERVALS.map(i => <option key={i}>{i}</option>)}
           </select>
         </div>
         <div>
-          <label style={s.label}>Tanggal Pertama</label>
-          <input type="date" style={s.input} value={form.next_date} onChange={e => setForm(f => ({ ...f, next_date: e.target.value }))} />
+          <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Tanggal Pertama</label>
+          <input type="date" className={inputCls()} value={form.next_date}
+            onChange={e => setForm(f => ({ ...f, next_date: e.target.value }))} />
         </div>
-        <div style={{ gridColumn: '1/-1' }}>
-          <label style={s.label}>Catatan (opsional)</label>
-          <input style={s.input} placeholder="Instruksi khusus..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+        <div className="col-span-2">
+          <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Catatan (opsional)</label>
+          <input className={inputCls()} placeholder="Instruksi khusus..." value={form.notes}
+            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         </div>
       </div>
-      {error && <div style={{ color: T.danger, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}><AlertCircle size={12} /> {error}</div>}
-      <button onClick={handleAdd} disabled={saving} style={{ ...s.btn('primary'), alignSelf: 'flex-start', opacity: saving ? 0.7 : 1 }}>
+
+      {error && (
+        <div className="flex items-center gap-1.5 text-red-400 text-xs">
+          <AlertCircle size={12} /> {error}
+        </div>
+      )}
+
+      <button onClick={handleAdd} disabled={saving}
+        className="self-start flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
         <Plus size={14} /> {saving ? 'Menyimpan...' : 'Tambah Jadwal'}
       </button>
-      <div style={{ ...s.sectionHeading, marginTop: 8 }}><ClipboardList size={14} color={T.textMuted} /> Jadwal Terdaftar ({pmList.length})</div>
-      {pmList.length === 0
-        ? <div style={{ textAlign: 'center', color: T.textMuted, fontSize: 12, padding: '24px 0', border: `1px dashed ${T.border}`, borderRadius: 10 }}>Belum ada jadwal PM untuk aset ini</div>
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pmList.map((pm) => {
-              const overdue     = isOverduePM(pm)
-              const done        = pm.status === 'Selesai'
-              const color       = done ? T.success : overdue ? T.danger : T.warning
-              const statusLabel = done ? 'Selesai' : overdue ? 'Terlambat' : 'Terjadwal'
-              return (
-                <div key={pm.id ?? pm.title} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${overdue && !done ? `${T.danger}40` : T.border}`, borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: `${color}18`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {done ? <CheckCheck size={16} /> : overdue ? <AlertCircle size={16} /> : <Bell size={16} />}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: T.text, fontWeight: 600, fontSize: 13 }}>{pm.title}</div>
-                    <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
-                      <span style={{ color: T.textMuted, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}><RefreshCw size={10} /> {pm.interval}</span>
-                      <span style={{ color: T.textMuted, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={10} /> {pm.next_date}</span>
-                      {pm.last_done && <span style={{ color: T.textMuted, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={10} /> Terakhir: {pm.last_done}</span>}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={s.pill(color)}>{statusLabel}</span>
-                    {!done && <button onClick={() => handleComplete(pm.id)} style={s.btn('success')}><CheckCheck size={11} /> Selesai</button>}
+
+      {/* List */}
+      <div className="flex items-center gap-2 text-sm font-bold text-gray-200 pb-2.5 border-b border-gray-700 mt-2">
+        <ClipboardList size={14} className="text-gray-500" /> Jadwal Terdaftar
+        <span className="text-gray-500 font-normal text-xs">({pmList.length})</span>
+      </div>
+
+      {pmList.length === 0 ? (
+        <div className="text-center text-gray-500 text-xs py-6 border border-dashed border-gray-700 rounded-xl">
+          Belum ada jadwal PM untuk aset ini
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {pmList.map((pm) => {
+            const overdue = isOverduePM(pm)
+            const done    = pm.status === 'Selesai'
+
+            const colorMap = {
+              icon:   done ? 'text-emerald-400' : overdue ? 'text-red-400' : 'text-amber-400',
+              bg:     done ? 'bg-emerald-400/10' : overdue ? 'bg-red-400/10' : 'bg-amber-400/10',
+              badge:  done ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400'
+                           : overdue ? 'bg-red-400/10 border-red-400/30 text-red-400'
+                           : 'bg-amber-400/10 border-amber-400/30 text-amber-400',
+              border: overdue && !done ? 'border-red-500/30' : 'border-gray-700',
+            }
+            const statusLabel = done ? 'Selesai' : overdue ? 'Terlambat' : 'Terjadwal'
+
+            return (
+              <div key={pm.id ?? pm.title}
+                className={`flex items-center gap-3 bg-white/[0.03] border ${colorMap.border} rounded-xl px-3.5 py-3`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colorMap.bg} ${colorMap.icon}`}>
+                  {done ? <CheckCheck size={16} /> : overdue ? <AlertCircle size={16} /> : <Bell size={16} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-200 font-semibold text-sm">{pm.title}</p>
+                  <div className="flex gap-3 mt-1 flex-wrap">
+                    <span className="flex items-center gap-1 text-gray-500 text-[11px]"><RefreshCw size={9} /> {pm.interval}</span>
+                    <span className="flex items-center gap-1 text-gray-500 text-[11px]"><Calendar size={9} /> {pm.next_date}</span>
+                    {pm.last_done && <span className="flex items-center gap-1 text-gray-500 text-[11px]"><Clock size={9} /> Terakhir: {pm.last_done}</span>}
                   </div>
                 </div>
-              )
-            })}
-          </div>
-      }
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${colorMap.badge}`}>
+                    {statusLabel}
+                  </span>
+                  {!done && (
+                    <button onClick={() => handleComplete(pm.id)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 transition">
+                      <CheckCheck size={11} /> Selesai
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
 
 // ─── AssetDetailPage ──────────────────────────────────────────
 const AssetDetailPage = () => {
-  const { id }       = useParams()
-  const navigate     = useNavigate()
+  const { id }        = useParams()
+  const navigate      = useNavigate()
   const { authFetch } = useAuth()
 
   const [asset,    setAsset]    = useState(null)
@@ -516,32 +557,35 @@ const AssetDetailPage = () => {
 
   useEffect(() => { fetchAsset() }, [fetchAsset])
 
-  // ── Loading skeleton ──
+  // ── Loading ──
   if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ height: 32, width: 200, background: T.surface, borderRadius: 8 }} className="animate-pulse" />
-      <div style={{ height: 120, background: T.surface, borderRadius: 14 }} className="animate-pulse" />
-      <div style={{ height: 400, background: T.surface, borderRadius: 14 }} className="animate-pulse" />
+    <div className="flex flex-col gap-5 animate-pulse">
+      <div className="h-8 w-48 bg-gray-800 rounded-lg" />
+      <div className="h-28 bg-gray-800 rounded-2xl" />
+      <div className="h-96 bg-gray-800 rounded-2xl" />
     </div>
   )
 
   // ── Error ──
   if (error) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 12 }}>
-      <AlertTriangle size={40} color={T.danger} />
-      <p style={{ color: T.danger, fontSize: 14 }}>{error}</p>
-      <button onClick={() => navigate('/assets')} style={s.btn('ghost')}>← Kembali ke Assets</button>
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+      <AlertTriangle size={40} className="text-red-500" />
+      <p className="text-red-400 text-sm">{error}</p>
+      <button onClick={() => navigate('/assets')}
+        className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+        ← Kembali ke Assets
+      </button>
     </div>
   )
 
   const a       = asset
-  const cfg     = CAT_CFG[a.category] ?? { icon: <Package size={22} />, color: T.accent }
+  const cfg     = CAT_CFG[a.category] ?? { icon: <Package size={22} />, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' }
   const sCfg    = ASSET_STATUS_CFG[a.status]
   const expired = isExpired(a.warranty_expiry)
   const overdue = (a.pm_schedules ?? []).filter(isOverduePM).length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="flex flex-col gap-5">
 
       {/* Edit Modal */}
       {showEdit && (
@@ -553,47 +597,63 @@ const AssetDetailPage = () => {
       )}
 
       {/* ── Breadcrumb ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="flex items-center gap-2.5">
         <button onClick={() => navigate('/assets')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer' }}>
+          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 transition bg-transparent border-none cursor-pointer">
           <ArrowLeft size={15} /> Assets
         </button>
-        <span style={{ color: T.border }}>/</span>
-        <span style={{ color: T.text, fontSize: 13, fontFamily: 'monospace' }}>{a.asset_number}</span>
-        <button onClick={fetchAsset}
-          style={{ ...s.iconBtn(), marginLeft: 'auto' }}>
-          <RefreshCw size={13} />
-        </button>
-        <button onClick={() => setShowEdit(true)} style={s.btn('ghost')}>
-          <Pencil size={13} /> Edit
-        </button>
+        <span className="text-gray-700">/</span>
+        <span className="text-gray-200 text-sm font-mono">{a.asset_number}</span>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={fetchAsset}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-gray-700 text-gray-400 hover:bg-white/10 transition">
+            <RefreshCw size={13} />
+          </button>
+          <button onClick={() => setShowEdit(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+            <Pencil size={13} /> Edit
+          </button>
+        </div>
       </div>
 
       {/* ── Hero card ── */}
-      <div style={{ background: T.surface ?? '#13161f', border: `1px solid ${T.border}`, borderRadius: 16, padding: '20px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
-          {/* Icon */}
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: `${cfg.color}12`, border: `1px solid ${cfg.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: cfg.color, flexShrink: 0 }}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-5 py-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Category icon */}
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
             {cfg.icon}
           </div>
 
           {/* Title */}
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-              <span style={{ color: T.textDim, fontSize: 11, fontFamily: 'monospace', background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, borderRadius: 6, padding: '2px 8px' }}>{a.asset_number}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <span className="font-mono text-[11px] text-gray-500 bg-white/5 border border-gray-700 rounded-md px-2 py-0.5">
+                {a.asset_number}
+              </span>
               <Badge label={a.status} cfg={sCfg} />
-              <span style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, color: T.textMuted, padding: '2px 10px', borderRadius: 20, fontSize: 11 }}>{a.category}</span>
-              {overdue > 0 && <span style={s.pill(T.danger)}><Bell size={10} /> PM Terlambat {overdue}</span>}
-              {expired && <span style={s.pill(T.danger)}><AlertTriangle size={10} /> Garansi Expired</span>}
+              <span className="bg-white/5 border border-gray-700 text-gray-400 text-[11px] px-2.5 py-0.5 rounded-full">
+                {a.category}
+              </span>
+              {overdue > 0 && (
+                <span className="inline-flex items-center gap-1 bg-red-400/10 border border-red-400/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                  <Bell size={9} /> PM Terlambat {overdue}
+                </span>
+              )}
+              {expired && (
+                <span className="inline-flex items-center gap-1 bg-red-400/10 border border-red-400/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                  <AlertTriangle size={9} /> Garansi Expired
+                </span>
+              )}
             </div>
-            <h1 style={{ color: T.text, fontWeight: 700, fontSize: 20, margin: 0 }}>{a.name}</h1>
-            <div style={{ color: T.textDim, fontSize: 12, marginTop: 4 }}>S/N: {a.serial_number} · {a.brand} {a.model}</div>
+            <h1 className="text-gray-100 font-bold text-xl">{a.name}</h1>
+            <p className="text-gray-500 text-xs mt-1">S/N: {a.serial_number} · {a.brand} {a.model}</p>
           </div>
 
-          {/* Meta info */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'right', flexShrink: 0 }}>
+          {/* Meta */}
+          <div className="hidden md:flex flex-col gap-1.5 text-right shrink-0">
             {[[Globe, a.location], [User, a.user || 'Unassigned'], [Shield, a.warranty_expiry || '—']].map(([Ic, val], i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, color: T.textMuted, fontSize: 12 }}>
+              <div key={i} className="flex items-center justify-end gap-1.5 text-gray-500 text-xs">
                 <Ic size={11} /> {val}
               </div>
             ))}
@@ -602,7 +662,7 @@ const AssetDetailPage = () => {
       </div>
 
       {/* ── Tab content ── */}
-      <div style={{ background: T.surface ?? '#13161f', border: `1px solid ${T.border}`, borderRadius: 16, padding: '20px 24px' }}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-5 py-5">
         <TabBar active={tab} onChange={setTab} />
         {tab === 'info' && <InfoTab asset={a} />}
         {tab === 'qr'   && <QRTab   asset={a} />}
