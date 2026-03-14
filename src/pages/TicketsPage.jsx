@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, SlidersHorizontal, RefreshCw, Tag, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, SlidersHorizontal, RefreshCw, Tag, ChevronLeft, ChevronRight, Paperclip, X as XIcon, FileText, ImageIcon, File } from 'lucide-react'
 import { useAuth } from '../context/AppContext'
 import { Badge, PageHeader, FilterTabs, SearchBar, PrimaryButton, EmptyState } from '../components/ui'
 import { PRIORITY_CFG, STATUS_CFG } from '../theme'
@@ -69,18 +69,64 @@ const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange, loadi
 const PRIORITIES   = ['Low', 'Medium', 'High', 'Critical']
 const TICKET_CATS  = ['Network', 'Email', 'Printer', 'Software', 'Hardware', 'Server', 'Other']
 const EMPTY_TICKET = { title: '', category: 'Network', priority: 'Medium', description: '' }
+const MAX_FILES    = 5
+const MAX_MB       = 10
 
 const inputCls = 'w-full bg-white/5 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition'
 
-const NewTicketModal = ({ onClose, onSubmit, submitting }) => {
-  const { authFetch } = useAuth()
-  const [form, setForm]     = useState(EMPTY_TICKET)
+// Helper: pilih ikon berdasar MIME / ekstensi
+const fileIcon = (file) => {
+  if (file.type.startsWith('image/')) return <ImageIcon size={14} className="text-blue-400" />
+  if (file.type === 'application/pdf') return <FileText size={14} className="text-red-400" />
+  return <File size={14} className="text-gray-400" />
+}
+
+const formatBytes = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const NewTicketModal = ({ onClose, onSubmit }) => {
+  const { authFetch }   = useAuth()
+  const [form, setForm] = useState(EMPTY_TICKET)
+  const [files, setFiles]   = useState([])        // Array<File>
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef(null)
 
   const set = (k) => (e) => {
     setForm(f => ({ ...f, [k]: e.target.value }))
     setErrors(e2 => ({ ...e2, [k]: undefined }))
+  }
+
+  // Tambah file — deduplikasi nama, max MAX_FILES
+  const addFiles = (incoming) => {
+    const arr = Array.from(incoming)
+    setFiles(prev => {
+      const combined = [...prev]
+      for (const f of arr) {
+        if (combined.length >= MAX_FILES) break
+        if (f.size > MAX_MB * 1024 * 1024) {
+          setErrors(e => ({ ...e, files: `File "${f.name}" melebihi ${MAX_MB}MB` }))
+          continue
+        }
+        if (!combined.find(x => x.name === f.name && x.size === f.size)) {
+          combined.push(f)
+        }
+      }
+      return combined
+    })
+    setErrors(e => ({ ...e, files: undefined }))
+  }
+
+  const removeFile = (idx) => setFiles(p => p.filter((_, i) => i !== idx))
+
+  // Drag & drop
+  const onDrop = (e) => {
+    e.preventDefault(); setDragOver(false)
+    addFiles(e.dataTransfer.files)
   }
 
   const validate = () => {
@@ -95,12 +141,31 @@ const NewTicketModal = ({ onClose, onSubmit, submitting }) => {
     if (Object.keys(e).length) { setErrors(e); return }
     setSaving(true)
     try {
-      const res = await authFetch('/api/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (!res.ok) throw new Error('Gagal membuat tiket')
+      let ticketId = null
+
+      if (files.length > 0) {
+        // Kirim sebagai multipart/form-data
+        const fd = new FormData()
+        fd.append('title',       form.title)
+        fd.append('category',    form.category)
+        fd.append('priority',    form.priority)
+        fd.append('description', form.description)
+        files.forEach(f => fd.append('attachments[]', f))
+
+        const res = await authFetch('/api/tickets', { method: 'POST', body: fd })
+        if (!res.ok) throw new Error('Gagal membuat tiket')
+        const data = await res.json()
+        ticketId = (data.data ?? data)?.id
+      } else {
+        // JSON biasa
+        const res = await authFetch('/api/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        if (!res.ok) throw new Error('Gagal membuat tiket')
+      }
+
       onSubmit()
     } catch (err) {
       setErrors({ _global: err.message })
@@ -112,7 +177,7 @@ const NewTicketModal = ({ onClose, onSubmit, submitting }) => {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
       onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl"
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl"
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}
@@ -123,6 +188,7 @@ const NewTicketModal = ({ onClose, onSubmit, submitting }) => {
 
         {/* Body */}
         <div className="flex flex-col gap-4 px-5 py-5 overflow-y-auto">
+
           {/* Judul */}
           <div>
             <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
@@ -155,12 +221,65 @@ const NewTicketModal = ({ onClose, onSubmit, submitting }) => {
               Deskripsi <span className="text-red-400">*</span>
             </label>
             <textarea
-              className={`${inputCls} min-h-[120px] resize-y ${errors.description ? 'border-red-500' : ''}`}
+              className={`${inputCls} min-h-[100px] resize-y ${errors.description ? 'border-red-500' : ''}`}
               placeholder="Jelaskan masalah secara detail..."
               value={form.description}
               onChange={set('description')}
             />
             {errors.description && <p className="text-red-400 text-[11px] mt-1">{errors.description}</p>}
+          </div>
+
+          {/* Upload Area */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+              Lampiran <span className="text-gray-600 font-normal normal-case">(maks {MAX_FILES} file · {MAX_MB}MB per file)</span>
+            </label>
+
+            {/* Drop zone */}
+            <div
+              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              onClick={() => files.length < MAX_FILES && fileInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl px-4 py-5 transition cursor-pointer
+                ${files.length >= MAX_FILES ? 'border-gray-800 cursor-not-allowed opacity-50' : dragOver ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 hover:border-gray-500 hover:bg-white/3'}`}
+            >
+              <Paperclip size={20} className={dragOver ? 'text-blue-400' : 'text-gray-500'} />
+              <p className="text-xs text-gray-400 text-center">
+                {files.length >= MAX_FILES
+                  ? `Batas ${MAX_FILES} file tercapai`
+                  : <><span className="text-blue-400 font-semibold">Klik untuk pilih</span> atau drag &amp; drop file</>
+                }
+              </p>
+              <p className="text-[10px] text-gray-600">PNG, JPG, PDF, DOCX, XLSX, dll.</p>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={e => { addFiles(e.target.files); e.target.value = '' }}
+            />
+
+            {errors.files && <p className="text-amber-400 text-[11px] mt-1">{errors.files}</p>}
+
+            {/* File list */}
+            {files.length > 0 && (
+              <div className="flex flex-col gap-1.5 mt-2.5">
+                {files.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2.5 bg-white/[0.04] border border-gray-700 rounded-lg px-3 py-2">
+                    {fileIcon(f)}
+                    <span className="flex-1 text-xs text-gray-300 truncate">{f.name}</span>
+                    <span className="text-[10px] text-gray-500 shrink-0">{formatBytes(f.size)}</span>
+                    <button onClick={() => removeFile(i)}
+                      className="text-gray-600 hover:text-red-400 transition shrink-0">
+                      <XIcon size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {errors._global && (
@@ -171,15 +290,20 @@ const NewTicketModal = ({ onClose, onSubmit, submitting }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-800">
-          <button onClick={onClose} disabled={saving}
-            className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
-            Batal
-          </button>
-          <button onClick={handleSubmit} disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
-            {saving ? 'Menyimpan...' : 'Buat Tiket'}
-          </button>
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-800">
+          <span className="text-[11px] text-gray-600">
+            {files.length > 0 ? `${files.length} file terlampir` : 'Belum ada lampiran'}
+          </span>
+          <div className="flex gap-2">
+            <button onClick={onClose} disabled={saving}
+              className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+              Batal
+            </button>
+            <button onClick={handleSubmit} disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
+              {saving ? 'Menyimpan...' : 'Buat Tiket'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

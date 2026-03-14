@@ -1,362 +1,292 @@
 import { useState, useEffect } from 'react'
 import {
-  BarChart3,
-  TrendingUp,
-  Zap,
-  Package,
-  FileText,
-  Download,
-  Ticket,
-  CheckCheck,
-  Clock
+  BarChart3, TrendingUp, Zap, Package,
+  FileText, Download, Ticket, CheckCheck,
+  Clock, Loader2,
 } from 'lucide-react'
-
-import { T } from '../theme'
-import { Card, PageHeader, SectionHeader } from '../components/ui'
+import { PageHeader } from '../components/ui'
 import { useAuth } from '../context/AppContext'
 
-/* =========================
-   REPORT LIST
-========================= */
-
+// ─── Report definitions ───────────────────────────────────────
 const REPORTS = [
   {
-    key: 'tickets',
+    key:   'tickets',
     title: 'Laporan Tiket Bulanan',
-    desc: 'Ringkasan tiket per bulan termasuk kategori dan prioritas.',
-    Icon: BarChart3,
-    color: T.accent
+    desc:  'Ringkasan tiket per bulan termasuk kategori dan prioritas.',
+    icon:  BarChart3,
+    color: { text: 'text-blue-400',   bg: 'bg-blue-400/10',   border: 'border-blue-400/20'   },
   },
   {
-    key: 'technicians',
+    key:   'technicians',
     title: 'Kinerja Teknisi',
-    desc: 'Analisis performa tim IT Support berdasarkan tiket diselesaikan.',
-    Icon: TrendingUp,
-    color: T.purple
+    desc:  'Analisis performa tim IT Support berdasarkan tiket diselesaikan.',
+    icon:  TrendingUp,
+    color: { text: 'text-violet-400', bg: 'bg-violet-400/10', border: 'border-violet-400/20' },
   },
   {
-    key: 'sla',
+    key:   'sla',
     title: 'SLA Performance Report',
-    desc: 'Tingkat keberhasilan penyelesaian tiket sesuai SLA agreement.',
-    Icon: Zap,
-    color: T.warning
+    desc:  'Tingkat keberhasilan penyelesaian tiket sesuai SLA agreement.',
+    icon:  Zap,
+    color: { text: 'text-amber-400',  bg: 'bg-amber-400/10',  border: 'border-amber-400/20'  },
   },
   {
-    key: 'assets',
+    key:   'assets',
     title: 'Inventaris Aset IT',
-    desc: 'Laporan lengkap aset IT perusahaan beserta status dan warranty.',
-    Icon: Package,
-    color: T.success
-  }
+    desc:  'Laporan lengkap aset IT perusahaan beserta status dan warranty.',
+    icon:  Package,
+    color: { text: 'text-emerald-400',bg: 'bg-emerald-400/10',border: 'border-emerald-400/20'},
+  },
 ]
 
-/* =========================
-   COMPONENT
-========================= */
+// ─── Preview column definitions per report type ───────────────
+// Tiket: field actual dari response API (tiket individual)
+const PREVIEW_COLS = {
+  tickets: [
+    { key: 'ticket_number', label: 'No. Tiket',  render: (v, row) => v ?? `#${row.id}` },
+    { key: 'title',         label: 'Judul'       },
+    { key: 'category',      label: 'Kategori'    },
+    { key: 'priority',      label: 'Prioritas'   },
+    { key: 'status',        label: 'Status'      },
+    { key: 'requester',     label: 'Reporter',   render: (v) => v?.name ?? '—' },
+    { key: 'assignee',      label: 'Assigned',   render: (v) => v?.name ?? 'Unassigned' },
+    { key: 'created_at',    label: 'Dibuat',     render: (v) => v ? new Date(v).toLocaleDateString('id-ID') : '—' },
+    { key: 'sla_breached',  label: 'SLA Breach', render: (v) => v ? '⚠️ Ya' : '✓ Tidak' },
+  ],
+  technicians: [
+    { key: 'name',           label: 'Teknisi'        },
+    { key: 'role',           label: 'Role'           },
+    { key: 'total_assigned', label: 'Ditugaskan'     },
+    { key: 'resolved_count', label: 'Resolved'       },
+    { key: 'sla_met',        label: 'SLA Terpenuhi'  },
+    { key: 'sla_score',      label: 'SLA %',         render: (v) => v != null ? `${v}%` : '—' },
+    { key: 'avg_hours',      label: 'Avg Waktu (jam)'},
+  ],
+  sla: [
+    { key: 'priority',  label: 'Prioritas'   },
+    { key: 'target',    label: 'Target SLA'  },
+    { key: 'total',     label: 'Total Tiket' },
+    { key: 'on_time',   label: 'Tepat Waktu' },
+    { key: 'breached',  label: 'Terlambat'   },
+    { key: 'achieved',  label: 'Tercapai',   render: (v) => v != null ? `${v}%` : '—' },
+  ],
+  assets: [
+    { key: 'asset_number',   label: 'No. Aset'    },
+    { key: 'name',           label: 'Nama'         },
+    { key: 'category',       label: 'Kategori'     },
+    { key: 'status',         label: 'Status'       },
+    { key: 'location',       label: 'Lokasi'       },
+    { key: 'warranty_expiry',label: 'Garansi s/d'  },
+  ],
+}
 
+// ─── ReportsPage ──────────────────────────────────────────────
 const ReportsPage = () => {
-
   const { authFetch } = useAuth()
 
-  const [loading,setLoading] = useState(null)
-  const [stats,setStats] = useState(null)
+  const [loadingKey, setLoadingKey] = useState(null)   // e.g. "tickets-pdf"
+  const [stats,      setStats]      = useState(null)
+  const [preview,    setPreview]    = useState(null)   // { key, rows }
+  const [previewLoading, setPreviewLoading] = useState(null)
 
-  /* =========================
-     LOAD QUICK STATS
-  ========================= */
+  const month = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 
+  // ── Load quick stats ──
   useEffect(() => {
-
-    const loadStats = async () => {
-
+    const load = async () => {
       try {
-
-        const res = await authFetch('/api/reports/summary')
-
-        if(!res.ok) throw new Error()
-
-        const data = await res.json()
-
-        setStats(data)
-
-      } catch (err) {
-
-        console.error('Stats load error:',err)
-
-      }
-
+        const res  = await authFetch('/api/reports/summary')
+        if (!res.ok) throw new Error()
+        setStats(await res.json())
+      } catch { /* silent */ }
     }
+    load()
+  }, [])
 
-    loadStats()
-
-  },[])
-
-  /* =========================
-     EXPORT REPORT
-  ========================= */
-
-  const handleExport = async (type,format) => {
-
+  // ── Export ──
+  const handleExport = async (key, format) => {
+    const id = `${key}-${format}`
     try {
-
-      setLoading(`${type}-${format}`)
-
-      const res = await authFetch(`/api/reports/${type}?format=${format}`)
-
-      if(!res.ok){
-
-        const text = await res.text()
-        throw new Error(text)
-
-      }
-
+      setLoadingKey(id)
+      const res = await authFetch(`/api/reports/${key}?format=${format}`)
+      if (!res.ok) throw new Error(await res.text())
       const blob = await res.blob()
-
-      const url = window.URL.createObjectURL(blob)
-
-      const link = document.createElement('a')
-
-      link.href = url
-
-      const ext = format === 'excel' ? 'xlsx' : 'pdf'
-
-      link.download = `${type}-report.${ext}`
-
-      document.body.appendChild(link)
-
-      link.click()
-
-      link.remove()
-
-      window.URL.revokeObjectURL(url)
-
-    } catch(err) {
-
-      console.error('Export error:',err)
-
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `${key}-report.${format === 'excel' ? 'xlsx' : 'pdf'}`
+      document.body.appendChild(a); a.click(); a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
       alert('Gagal export laporan')
-
     } finally {
-
-      setLoading(null)
-
+      setLoadingKey(null)
     }
-
   }
 
-  /* =========================
-     MONTH TITLE
-  ========================= */
-
-  const month = new Date().toLocaleDateString('id-ID',{
-    month:'long',
-    year:'numeric'
-  })
-
-  /* =========================
-     QUICK STATS DATA
-  ========================= */
+  // ── Preview data ──
+  // tickets   → /api/reports/tickets?format=json   (paginated, rows ada di data.data)
+  // sla       → /api/reports/sla                   (array langsung)
+  // technicians → /api/reports/technicians         (array langsung)
+  // assets    → /api/reports/assets?format=json    (rows ada di data.data)
+  const handlePreview = async (key) => {
+    if (preview?.key === key) { setPreview(null); return }
+    setPreviewLoading(key)
+    try {
+      const url = key === 'sla' || key === 'technicians'
+        ? `/api/reports/${key}`
+        : `/api/reports/${key}?format=json`
+      const res = await authFetch(url)
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      // tickets/assets: paginated → data.data; sla/technicians: array langsung
+      let rows = []
+      if (Array.isArray(data))        rows = data
+      else if (Array.isArray(data.data)) rows = data.data
+      else if (Array.isArray(data.rows)) rows = data.rows
+      setPreview({ key, rows })
+    } catch {
+      setPreview({ key, rows: [] })
+    } finally {
+      setPreviewLoading(null)
+    }
+  }
 
   const STATS = [
-    ['Total Tiket',stats?.total_tickets ?? '-',Ticket,T.accent],
-    ['Resolved',stats?.resolved ?? '-',CheckCheck,T.success],
-    ['Avg Resolution',stats ? `${stats.avg_resolution}h` : '-',Clock,T.warning],
-    ['SLA Score',stats ? `${stats.sla_score}%` : '-',Zap,T.purple]
+    { label: 'Total Tiket',    value: stats?.total_tickets ?? '—',               icon: Ticket,     color: 'text-blue-400',    bg: 'bg-blue-400/10',    border: 'border-blue-400/20'    },
+    { label: 'Resolved',       value: stats?.resolved ?? '—',                    icon: CheckCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
+    { label: 'Avg Resolution', value: stats ? `${stats.avg_resolution}h` : '—',  icon: Clock,      color: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'border-amber-400/20'   },
+    { label: 'SLA Score',      value: stats ? `${stats.sla_score}%` : '—',       icon: Zap,        color: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'border-violet-400/20'  },
   ]
 
-  /* =========================
-     RENDER
-  ========================= */
-
   return (
+    <div className="flex flex-col gap-5">
 
-    <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      <PageHeader title="Reports" subtitle="Generate dan export laporan IT Support" />
 
-      <PageHeader
-        title="Reports"
-        subtitle="Generate dan export laporan IT Support"
-      />
+      {/* ── Report Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        {REPORTS.map(({ key, title, desc, icon: Icon, color }) => {
+          const isOpenPreview = preview?.key === key
+          const isPrevLoading = previewLoading === key
 
-      {/* ================= REPORT CARDS ================= */}
+          return (
+            <div key={key} className="bg-gray-900 border border-gray-700 rounded-2xl p-5 flex flex-col gap-4 hover:border-gray-600 transition">
 
-      <div style={{
-        display:'grid',
-        gridTemplateColumns:'1fr 1fr',
-        gap:12
-      }}>
-
-        {REPORTS.map((report)=>{
-
-          const Icon = report.Icon
-
-          return(
-
-            <Card key={report.key} hover style={{padding:20}}>
-
-              <div
-                style={{
-                  width:40,
-                  height:40,
-                  borderRadius:11,
-                  background:`${report.color}15`,
-                  border:`1px solid ${report.color}25`,
-                  display:'flex',
-                  alignItems:'center',
-                  justifyContent:'center',
-                  marginBottom:14
-                }}
-              >
-                <Icon size={18} color={report.color}/>
+              {/* Icon + title */}
+              <div className="flex items-start gap-3.5">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${color.bg} ${color.border}`}>
+                  <Icon size={18} className={color.text} />
+                </div>
+                <div>
+                  <p className="text-gray-100 font-bold text-sm">{title}</p>
+                  <p className="text-gray-500 text-xs mt-1 leading-relaxed">{desc}</p>
+                </div>
               </div>
 
-              <h3 style={{
-                color:T.text,
-                fontWeight:700,
-                fontSize:14
-              }}>
-                {report.title}
-              </h3>
-
-              <p style={{
-                color:T.textMuted,
-                fontSize:12,
-                marginTop:6,
-                lineHeight:1.55
-              }}>
-                {report.desc}
-              </p>
-
-              <div style={{
-                display:'flex',
-                gap:8,
-                marginTop:16
-              }}>
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                {/* Preview */}
+                <button
+                  onClick={() => handlePreview(key)}
+                  disabled={loadingKey !== null || isPrevLoading}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-semibold transition disabled:opacity-50
+                    ${isOpenPreview
+                      ? 'bg-gray-700 border-gray-600 text-gray-200'
+                      : 'bg-white/5 border-gray-700 text-gray-400 hover:bg-white/10 hover:text-gray-200'}`}
+                >
+                  {isPrevLoading
+                    ? <><Loader2 size={11} className="animate-spin" /> Memuat...</>
+                    : <><FileText size={11} /> {isOpenPreview ? 'Tutup Preview' : 'Preview'}</>
+                  }
+                </button>
 
                 {/* PDF */}
-
                 <button
-                  disabled={loading !== null}
-                  onClick={()=>handleExport(report.key,'pdf')}
-                  style={{
-                    flex:1,
-                    padding:'8px 10px',
-                    background:`${T.danger}0E`,
-                    border:`1px solid ${T.danger}22`,
-                    color:T.danger,
-                    borderRadius:8,
-                    fontSize:11,
-                    cursor:'pointer',
-                    fontWeight:600,
-                    display:'flex',
-                    alignItems:'center',
-                    justifyContent:'center',
-                    gap:5,
-                    opacity:loading ? 0.6 : 1
-                  }}
+                  disabled={loadingKey !== null}
+                  onClick={() => handleExport(key, 'pdf')}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border bg-red-500/10 border-red-500/30 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition disabled:opacity-50"
                 >
-                  <FileText size={11}/>
-                  {loading === `${report.key}-pdf`
-                    ? 'Generating...'
-                    : 'PDF'}
+                  {loadingKey === `${key}-pdf`
+                    ? <><Loader2 size={11} className="animate-spin" /> PDF...</>
+                    : <><FileText size={11} /> PDF</>
+                  }
                 </button>
 
-                {/* EXCEL */}
-
+                {/* Excel */}
                 <button
-                  disabled={loading !== null}
-                  onClick={()=>handleExport(report.key,'excel')}
-                  style={{
-                    flex:1,
-                    padding:'8px 10px',
-                    background:`${T.success}0E`,
-                    border:`1px solid ${T.success}22`,
-                    color:T.success,
-                    borderRadius:8,
-                    fontSize:11,
-                    cursor:'pointer',
-                    fontWeight:600,
-                    display:'flex',
-                    alignItems:'center',
-                    justifyContent:'center',
-                    gap:5,
-                    opacity:loading ? 0.6 : 1
-                  }}
+                  disabled={loadingKey !== null}
+                  onClick={() => handleExport(key, 'excel')}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border bg-emerald-500/10 border-emerald-500/30 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 transition disabled:opacity-50"
                 >
-                  <Download size={11}/>
-                  {loading === `${report.key}-excel`
-                    ? 'Generating...'
-                    : 'Excel'}
+                  {loadingKey === `${key}-excel`
+                    ? <><Loader2 size={11} className="animate-spin" /> Excel...</>
+                    : <><Download size={11} /> Excel</>
+                  }
                 </button>
-
               </div>
 
-            </Card>
-
+              {/* Preview table — inline below card */}
+              {isOpenPreview && (
+                <div className="overflow-x-auto rounded-xl border border-gray-700 -mx-1">
+                  {preview.rows.length === 0 ? (
+                    <p className="text-gray-500 text-xs text-center py-6">Tidak ada data tersedia.</p>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-800 sticky top-0">
+                        <tr>
+                          {PREVIEW_COLS[key]?.map(col => (
+                            <th key={col.key}
+                              className="px-3 py-2.5 text-left text-gray-400 font-semibold uppercase tracking-wider whitespace-nowrap">
+                              {col.label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {preview.rows.map((row, i) => (
+                          <tr key={i} className={`border-t border-gray-800 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
+                            {PREVIEW_COLS[key]?.map(col => {
+                              const raw = row[col.key]
+                              const val = col.render ? col.render(raw, row) : (raw ?? '—')
+                              return (
+                                <td key={col.key} className="px-3 py-2 text-gray-300 whitespace-nowrap">
+                                  {val}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
           )
-
         })}
-
       </div>
 
-      {/* ================= QUICK STATS ================= */}
-
-      <Card style={{padding:20}}>
-
-        <SectionHeader title={`Quick Stats — ${month}`} />
-
-        <div style={{
-          display:'grid',
-          gridTemplateColumns:'repeat(4,1fr)',
-          gap:12
-        }}>
-
-          {STATS.map(([label,value,Icon,color]) => (
-
-            <div
-              key={label}
-              style={{
-                background:`${color}08`,
-                border:`1px solid ${color}18`,
-                borderRadius:12,
-                padding:'14px 12px',
-                textAlign:'center'
-              }}
-            >
-
-              <Icon
-                size={16}
-                color={color}
-                style={{marginBottom:8}}
-              />
-
-              <div style={{
-                color:color,
-                fontSize:20,
-                fontWeight:800
-              }}>
-                {value}
-              </div>
-
-              <div style={{
-                color:T.textMuted,
-                fontSize:10,
-                marginTop:3
-              }}>
-                {label}
-              </div>
-
-            </div>
-
-          ))}
-
+      {/* ── Quick Stats ── */}
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-gray-200 font-bold text-sm">Quick Stats — {month}</p>
         </div>
 
-      </Card>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {STATS.map(({ label, value, icon: Icon, color, bg, border }) => (
+            <div key={label}
+              className={`${bg} ${border} border rounded-xl py-4 px-3 text-center flex flex-col items-center gap-2`}>
+              <Icon size={16} className={color} />
+              <p className={`font-extrabold text-xl ${color}`}>{value}</p>
+              <p className="text-gray-500 text-[10px] uppercase tracking-wider">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
     </div>
-
   )
-
 }
 
 export default ReportsPage
