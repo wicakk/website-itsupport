@@ -386,7 +386,7 @@ const PMTab = ({ asset, onPMSaved }) => {
     if (!form.title || !form.next_date) { setError('Judul dan tanggal wajib diisi'); return }
     setSaving(true); setError('')
     try {
-      const res  = await authFetch(`http://54.206.70.215/api/assets/${asset.id}/pm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      const res  = await authFetch(`/api/assets/${asset.id}/pm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const data = await res.json()
       setPmList((p) => [...p, data.data ?? data])
       setForm({ title: '', interval: 'Bulanan', next_date: '', notes: '' })
@@ -397,7 +397,7 @@ const PMTab = ({ asset, onPMSaved }) => {
 
   const handleComplete = async (pmId) => {
     try {
-      await authFetch(`http://54.206.70.215/api/assets/${asset.id}/pm/${pmId}/complete`, { method: 'PATCH' })
+      await authFetch(`/api/assets/${asset.id}/pm/${pmId}/complete`, { method: 'PATCH' })
       setPmList((p) => p.map((x) => x.id === pmId ? { ...x, status: 'Selesai', last_done: new Date().toISOString().slice(0, 10) } : x))
     } catch (e) { console.error(e) }
   }
@@ -509,7 +509,7 @@ const AssetFormModal = ({ onClose, onSaved, editAsset = null }) => {
     if (Object.keys(e).length) { setErrors(e); return }
     setSaving(true)
     try {
-      const res = await authFetch(isEdit ? `http://54.206.70.215/api/assets/${editAsset.id}` : 'http://54.206.70.215/api/assets', {
+      const res = await authFetch(isEdit ? `/api/assets/${editAsset.id}` : '/api/assets', {
         method:  isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(form),
@@ -644,7 +644,7 @@ const AssetsPage = () => {
 
   const fetchAssets = useCallback(async () => {
     try {
-      const res  = await authFetch('http://54.206.70.215/api/assets')
+      const res  = await authFetch('/api/assets')
       if (!res.ok) throw new Error()
       const data = await res.json()
       setAssets(data.data ?? data)
@@ -658,7 +658,7 @@ const AssetsPage = () => {
     if (!deleteAsset) return
     setDeleting(true)
     try {
-      const res = await authFetch(`http://54.206.70.215/api/assets/${deleteAsset.id}`, { method: 'DELETE' })
+      const res = await authFetch(`/api/assets/${deleteAsset.id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
       setAssets((p) => p.filter((a) => a.id !== deleteAsset.id))
       setDeleteAsset(null)
