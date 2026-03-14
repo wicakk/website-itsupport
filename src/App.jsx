@@ -14,6 +14,7 @@ import {
   UsersPage,
   SettingsPage,
   TicketDetailPage,
+  AssetDetailPage,
 } from "./pages"
 
 function ProtectedRoutes() {
@@ -38,6 +39,7 @@ function ProtectedRoutes() {
         <Route path="*" element={<Navigate to="/dashboard" />} />
 
         <Route path="/tickets/:id" element={<TicketDetailPage />} />
+        <Route path="/assets/:id" element={<AssetDetailPage />} />
       </Routes>
     </AppLayout>
   )

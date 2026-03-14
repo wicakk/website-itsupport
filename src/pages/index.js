@@ -6,4 +6,8 @@ export { default as MonitoringPage } from './MonitoringPage'
 export { default as ReportsPage }    from './ReportsPage'
 export { default as UsersPage }      from './UsersPage'
 export { default as SettingsPage }   from './SettingsPage'
+
+
+// Detail Pages
 export { default as TicketDetailPage } from './TicketDetailPage'
+export { default as AssetDetailPage } from './AssetDetailPage'
