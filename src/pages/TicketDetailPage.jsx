@@ -168,16 +168,17 @@ const TicketDetailPage = () => {
   }
 
   const fetchAgents = async () => {
-    const endpoints = ['/api/users?role=agent', '/api/users', '/api/agents', '/api/staff']
-    for (const url of endpoints) {
-      try {
-        const res = await authFetch(url)
-        if (!res.ok) continue
-        const data = await res.json()
-        const list = Array.isArray(data) ? data : (data.data ?? data.users ?? data.agents ?? [])
-        if (list.length > 0) { setAgents(list); return }
-      } catch (e) { /* try next */ }
-    }
+    try {
+      const res = await authFetch('/api/users')
+      if (!res.ok) return
+      const data = await res.json()
+      const list = Array.isArray(data) ? data : (data.data ?? data.users ?? [])
+      // Tampilkan hanya user role it_support
+      const filtered = list.filter(u =>
+        (u.role ?? u.role_name ?? '').toLowerCase() === 'it_support'
+      )
+      setAgents(filtered.length > 0 ? filtered : list)
+    } catch { /* non-fatal */ }
   }
 
   useEffect(() => { fetchTicket(); fetchAgents() }, [id])
@@ -219,12 +220,23 @@ const TicketDetailPage = () => {
   const handleAssign = async (agentId) => {
     setAssigning(true)
     try {
-      const res = await authFetch(`/api/tickets/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignee_id: agentId })
-      })
-      if (!res.ok) throw new Error('Gagal mengassign tiket.')
+      if (agentId === null) {
+        // Unassign: pakai PATCH update biasa
+        const res = await authFetch(`/api/tickets/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assigned_to: null })
+        })
+        if (!res.ok) throw new Error('Gagal menghapus assignment.')
+      } else {
+        // Assign: pakai endpoint khusus POST /assign
+        const res = await authFetch(`/api/tickets/${id}/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assigned_to: agentId })
+        })
+        if (!res.ok) throw new Error('Gagal mengassign tiket.')
+      }
       await fetchTicket()
     } catch (e) {
       alert(e.message)
