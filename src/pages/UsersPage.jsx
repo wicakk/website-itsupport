@@ -311,6 +311,7 @@ function UsersPage() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const { authFetch, user } = useAuth()
 
   const [editUser, setEditUser] = useState(null)
   const [deleteUser, setDeleteUser] = useState(null)
@@ -341,10 +342,10 @@ function UsersPage() {
         if(!token) throw new Error('Belum login')
         const headers = { Accept:'application/json', Authorization:`Bearer ${token}` }
         const [resUsers, resTickets] = await Promise.all([
-          fetch('/api/users', {headers}),
-          fetch('/api/tickets', {headers})
+          authFetch('/api/users', {headers}),
+          authFetch('/api/tickets', {headers})
         ])
-        if(!resUsers.ok) throw new Error('Gagal fetch users')
+        if(!resUsers.ok) throw new Error('Gagal authFetch users')
         const dataUsers = await resUsers.json()
         const rawUsers = dataUsers.data ?? []
 
@@ -386,7 +387,7 @@ function UsersPage() {
 
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('/api/users', {
+      const res = await authFetch('/api/users', {
         method:'POST',
         headers:{Accept:'application/json','Content-Type':'application/json', Authorization:`Bearer ${token}`},
         body: JSON.stringify(form)
@@ -409,7 +410,7 @@ function UsersPage() {
       const token = localStorage.getItem('token')
       let payload = { ...form }
       if(!payload.password) delete payload.password // jangan kirim password kosong
-      const res = await fetch(`/api/users/${id}`,{
+      const res = await authFetch(`/api/users/${id}`,{
         method:'PUT',
         headers:{Accept:'application/json','Content-Type':'application/json',Authorization:`Bearer ${token}`},
         body: JSON.stringify(payload)
@@ -430,7 +431,7 @@ function UsersPage() {
     setActionLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`/api/users/${id}`,{
+      const res = await authFetch(`/api/users/${id}`,{
         method:'DELETE',
         headers:{Accept:'application/json', Authorization:`Bearer ${token}`}
       })
