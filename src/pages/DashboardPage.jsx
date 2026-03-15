@@ -26,7 +26,7 @@ const SectionHeader = ({ title, onAction, actionLabel = 'Lihat Semua' }) => (
 )
 
 const DashboardPage = () => {
-  const navigate      = useNavigate()
+  const navigate            = useNavigate()
   const { authFetch, user } = useAuth()
   const today = new Date().toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -86,9 +86,9 @@ const DashboardPage = () => {
 
   // ── Error ──
   if (error) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-3 px-4">
       <AlertCircle size={32} className="text-red-500" />
-      <p className="text-red-400 text-sm">{error}</p>
+      <p className="text-red-400 text-sm text-center">{error}</p>
       <button onClick={fetchDashboard}
         className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition">
         Coba Lagi
@@ -103,18 +103,19 @@ const DashboardPage = () => {
       : '—'
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4 sm:gap-5">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-gray-100 font-extrabold text-xl">Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-1">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-gray-100 font-extrabold text-lg sm:text-xl">Dashboard</h1>
+          <p className="text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1 truncate">
             Selamat datang, <span className="text-blue-400 font-medium">{user?.name}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl px-3.5 py-1.5 text-gray-400 text-xs hidden sm:block">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Date: hidden on xs, visible sm+ */}
+          <div className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-1.5 text-gray-400 text-xs hidden sm:block whitespace-nowrap">
             {today}
           </div>
           <button
@@ -127,11 +128,11 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* ── Stat Cards: 2 col mobile, 4 col lg ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {loading
           ? Array(4).fill(0).map((_, i) => (
-              <div key={i} className="bg-gray-900 border border-gray-700 rounded-2xl p-5">
+              <div key={i} className="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5">
                 <Sk h="h-14" />
               </div>
             ))
@@ -152,14 +153,14 @@ const DashboardPage = () => {
         }
       </div>
 
-      {/* ── Charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+      {/* ── Charts: stacked on mobile, 3-col on lg ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-3.5">
         {/* Bar chart */}
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-700 rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5">
           <SectionHeader title="Tiket per Bulan" />
           {loading ? <Sk h="h-36" r="rounded-xl" /> : (
             <>
-              <div className="flex gap-4 mb-3">
+              <div className="flex gap-3 sm:gap-4 mb-3">
                 {[['Open', 'bg-blue-500'], ['Resolved', 'bg-emerald-500']].map(([l, c]) => (
                   <div key={l} className="flex items-center gap-1.5 text-xs text-gray-400">
                     <div className={`w-2 h-2 rounded-sm ${c}`} /> {l}
@@ -172,17 +173,17 @@ const DashboardPage = () => {
         </div>
 
         {/* Donut chart */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5">
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5">
           <SectionHeader title="Kategori Tiket" onAction={() => navigate('/tickets')} />
           {loading ? <Sk h="h-36" r="rounded-xl" /> : <DonutChart data={categoryDist} />}
         </div>
       </div>
 
-      {/* ── SLA + Recent Tickets ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+      {/* ── SLA + Recent Tickets: stacked on mobile, 3-col on lg ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-3.5">
 
         {/* SLA */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5">
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5">
           <SectionHeader title="SLA Performance" />
           {loading
             ? <div className="flex flex-col gap-3.5">{Array(4).fill(0).map((_, i) => <Sk key={i} h="h-8" />)}</div>
@@ -210,7 +211,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Recent Tickets */}
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-700 rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5">
           <SectionHeader title="Tiket Terbaru" onAction={() => navigate('/tickets')} />
           {loading
             ? <div className="flex flex-col gap-2">{Array(5).fill(0).map((_, i) => <Sk key={i} h="h-11" />)}</div>
@@ -222,7 +223,7 @@ const DashboardPage = () => {
                     <button
                       key={t.id}
                       onClick={() => navigate(`/tickets/${t.id}`)}
-                      className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-white/[0.03] transition text-left w-full group"
+                      className="flex items-center gap-2.5 sm:gap-3 px-1.5 sm:px-2 py-2.5 rounded-xl hover:bg-white/[0.03] transition text-left w-full group"
                     >
                       <Avatar
                         initials={t.requester?.initials ?? t.initials ?? '??'}
@@ -230,8 +231,8 @@ const DashboardPage = () => {
                         color={t.requester?.color}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="font-mono text-[10px] text-gray-500">
+                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                          <span className="font-mono text-[10px] text-gray-500 whitespace-nowrap">
                             {t.ticket_number ?? `#${t.id}`}
                           </span>
                           <Badge label={t.status} cfg={STATUS_CFG[t.status]} />
@@ -240,7 +241,10 @@ const DashboardPage = () => {
                           {t.title}
                         </p>
                       </div>
-                      <Badge label={t.priority} cfg={PRIORITY_CFG[t.priority]} dot />
+                      {/* Priority badge: hidden on xs to prevent overflow */}
+                      <div className="hidden xs:block shrink-0">
+                        <Badge label={t.priority} cfg={PRIORITY_CFG[t.priority]} dot />
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -250,7 +254,7 @@ const DashboardPage = () => {
       </div>
 
       {/* ── Technicians ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5">
         <SectionHeader title="Kinerja Teknisi" onAction={() => navigate('/users')} />
         {loading
           ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -266,20 +270,20 @@ const DashboardPage = () => {
                     <button
                       key={i}
                       onClick={() => navigate('/users')}
-                      className="text-left rounded-xl border p-4 hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                      className="text-left rounded-xl border p-3.5 sm:p-4 hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-blue-500/40 w-full"
                       style={{ backgroundColor: `${accent}08`, borderColor: `${accent}20` }}
                     >
                       {/* Avatar + name */}
-                      <div className="flex items-center gap-2.5 mb-3.5">
+                      <div className="flex items-center gap-2.5 mb-3 sm:mb-3.5">
                         <Avatar initials={t.initials} size={36} color={accent} />
-                        <div>
-                          <p className="text-gray-200 font-semibold text-sm leading-tight">{t.name}</p>
+                        <div className="min-w-0">
+                          <p className="text-gray-200 font-semibold text-sm leading-tight truncate">{t.name}</p>
                           <p className="text-gray-500 text-[10px]">{t.role ?? 'IT Support'}</p>
                         </div>
                       </div>
 
                       {/* Stats grid */}
-                      <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
                         {[
                           [t.resolved ?? 0,                    'Resolved', accent],
                           [t.avg_time ?? t.avg ?? '—',         'Avg Time', '#F59E0B'],

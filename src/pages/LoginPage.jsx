@@ -1,46 +1,30 @@
 import { useState } from 'react'
 import { Shield, Mail, Lock, Loader } from 'lucide-react'
-import { T, inputStyle, labelStyle } from '../theme'
 import { useAuth } from '../context/AppContext'
 
 const LoginPage = () => {
   const { login } = useAuth()
-  const [email, setEmail] = useState('')
-  const [pass, setPass] = useState('')
-  const [error, setError] = useState('')
+  const [email,   setEmail]   = useState('')
+  const [pass,    setPass]    = useState('')
+  const [error,   setError]   = useState('')
   const [loading, setLoading] = useState(false)
 
   const submit = async () => {
-    if (!email || !pass) {
-      setError('Email dan password wajib diisi.')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
+    if (!email || !pass) { setError('Email dan password wajib diisi.'); return }
+    setLoading(true); setError('')
     try {
-      const res = await fetch('/api/login', {
+      const res  = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ email, password: pass }),
       })
-
       const data = await res.json()
-
       if (!res.ok) {
-        // Handle Laravel validation / auth errors
         let msg = 'Login gagal.'
-        if (data.errors) {
-          msg = Object.values(data.errors).flat().join(' ')
-        } else if (data.message) {
-          msg = data.message
-        }
-        setError(msg)
-        return
+        if (data.errors)        msg = Object.values(data.errors).flat().join(' ')
+        else if (data.message)  msg = data.message
+        setError(msg); return
       }
-
-      // Berhasil → simpan user + token di context
       login(data.user, data.token)
     } catch (err) {
       setError('Tidak dapat terhubung ke server. Periksa koneksi Anda.')
@@ -50,269 +34,109 @@ const LoginPage = () => {
     }
   }
 
-  // Quick login demo
-  const quickLogin = (em) => {
-    setEmail(em)
-    setPass('password')
-    setError('')
-  }
+  const quickLogin = (em) => { setEmail(em); setPass('password'); setError('') }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: T.bg,
-        padding: 16,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Background Glows */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '18%',
-          left: '12%',
-          width: 420,
-          height: 420,
-          background: `radial-gradient(circle,${T.accent}10 0%,transparent 68%)`,
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '18%',
-          right: '12%',
-          width: 320,
-          height: 320,
-          background: `radial-gradient(circle,${T.purple}18 0%,transparent 68%)`,
-          pointerEvents: 'none',
-        }}
-      />
+    <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4 py-8 relative overflow-hidden">
 
-      <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1 }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 16,
-              background: `linear-gradient(135deg,${T.accent},${T.accentDark})`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-              boxShadow: `0 8px 28px ${T.accentGlow}`,
-            }}
-          >
-            <Shield size={22} color="#fff" />
+      {/* Background glows */}
+      <div className="absolute top-[18%] left-[12%] w-[420px] h-[420px] rounded-full bg-[radial-gradient(circle,rgba(59,139,255,0.06)_0%,transparent_68%)] pointer-events-none" />
+      <div className="absolute bottom-[18%] right-[12%] w-[320px] h-[320px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.1)_0%,transparent_68%)] pointer-events-none" />
+
+      <div className="w-full max-w-sm relative z-10">
+
+        {/* ── Logo ── */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-4 shadow-[0_8px_28px_rgba(59,139,255,0.35)]">
+            <Shield size={22} className="text-white" />
           </div>
-          <h1 style={{ color: T.text, fontWeight: 800, fontSize: 22 }}>IT Support System</h1>
-          <p style={{ color: T.textMuted, fontSize: 12, marginTop: 5 }}>
-            Enterprise Management Platform
-          </p>
+          <h1 className="text-gray-100 font-extrabold text-[22px]">IT Support System</h1>
+          <p className="text-gray-500 text-xs mt-1">Enterprise Management Platform</p>
         </div>
 
-        {/* Card */}
-        <div
-          style={{
-            background: T.surface,
-            border: `1px solid ${T.border}`,
-            borderRadius: 20,
-            padding: 28,
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-          }}
-        >
+        {/* ── Card ── */}
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-7 shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+
           {/* Email */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail
-                size={13}
-                style={{
-                  position: 'absolute',
-                  left: 12,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: T.textDim,
-                  pointerEvents: 'none',
-                }}
-              />
+          <div className="mb-4">
+            <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+              Email
+            </label>
+            <div className="relative">
+              <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               <input
                 type="email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  setError('')
-                }}
+                onChange={e => { setEmail(e.target.value); setError('') }}
                 placeholder="nama@perusahaan.com"
                 disabled={loading}
-                style={{ ...inputStyle, paddingLeft: 36, opacity: loading ? 0.6 : 1 }}
-                onFocus={(e) => (e.target.style.borderColor = T.accent)}
-                onBlur={(e) => (e.target.style.borderColor = T.border)}
+                onKeyDown={e => e.key === 'Enter' && submit()}
+                className="w-full bg-white/5 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition disabled:opacity-60"
               />
             </div>
           </div>
 
           {/* Password */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock
-                size={13}
-                style={{
-                  position: 'absolute',
-                  left: 12,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: T.textDim,
-                  pointerEvents: 'none',
-                }}
-              />
+          <div className="mb-4">
+            <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               <input
                 type="password"
                 value={pass}
-                onChange={(e) => {
-                  setPass(e.target.value)
-                  setError('')
-                }}
+                onChange={e => { setPass(e.target.value); setError('') }}
                 placeholder="••••••••"
                 disabled={loading}
-                onKeyDown={(e) => e.key === 'Enter' && submit()}
-                style={{ ...inputStyle, paddingLeft: 36, opacity: loading ? 0.6 : 1 }}
-                onFocus={(e) => (e.target.style.borderColor = T.accent)}
-                onBlur={(e) => (e.target.style.borderColor = T.border)}
+                onKeyDown={e => e.key === 'Enter' && submit()}
+                className="w-full bg-white/5 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition disabled:opacity-60"
               />
             </div>
           </div>
 
-          {/* Options */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-              fontSize: 12,
-            }}
-          >
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                color: T.textMuted,
-                cursor: 'pointer',
-              }}
-            >
-              <input type="checkbox" style={{ accentColor: T.accent }} /> Ingat saya
+          {/* Remember + Forgot */}
+          <div className="flex items-center justify-between mb-4 text-xs">
+            <label className="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none">
+              <input type="checkbox" className="accent-blue-500 cursor-pointer" /> Ingat saya
             </label>
-            <button
-              style={{
-                color: T.accent,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 12,
-              }}
-            >
+            <button className="text-blue-400 hover:text-blue-300 transition bg-transparent border-none cursor-pointer text-xs">
               Lupa password?
             </button>
           </div>
 
           {/* Error */}
           {error && (
-            <div
-              style={{
-                background: `${T.danger}10`,
-                border: `1px solid ${T.danger}25`,
-                borderRadius: 8,
-                padding: '8px 12px',
-                color: T.danger,
-                fontSize: 12,
-                marginBottom: 14,
-              }}
-            >
+            <div className="bg-red-500/10 border border-red-500/25 rounded-lg px-3 py-2 text-red-400 text-xs mb-4">
               {error}
             </div>
           )}
 
-          {/* Button Login */}
+          {/* Login button */}
           <button
             onClick={submit}
             disabled={loading}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: `linear-gradient(135deg,${T.accent},${T.accentDark})`,
-              border: 'none',
-              borderRadius: 11,
-              color: '#fff',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontSize: 14,
-              fontWeight: 700,
-              boxShadow: `0 6px 20px ${T.accentGlow}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              opacity: loading ? 0.8 : 1,
-              transition: 'opacity 0.2s',
-            }}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(59,139,255,0.35)] hover:brightness-110 disabled:opacity-80 disabled:cursor-not-allowed transition"
           >
             {loading ? (
-              <>
-                <Loader size={15} style={{ animation: 'spin 1s linear infinite' }} /> Memproses...
-              </>
-            ) : (
-              'Masuk'
-            )}
+              <><Loader size={15} className="animate-spin" /> Memproses...</>
+            ) : 'Masuk'}
           </button>
 
-          <style>{`@keyframes spin { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }`}</style>
-
           {/* Quick login demo */}
-          <div style={{ marginTop: 14 }}>
-            <p style={{ color: T.textDim, fontSize: 10, textAlign: 'center', marginBottom: 8 }}>
-              Akses cepat demo
-            </p>
-            <div style={{ display: 'flex', gap: 6 }}>
+          <div className="mt-5">
+            <p className="text-gray-600 text-[10px] text-center mb-2">Akses cepat demo</p>
+            <div className="flex gap-1.5">
               {[
                 ['IT Support', 'rizky@company.com'],
-                ['Manager', 'manager@company.com'],
-                ['User', 'eko@company.com'],
+                ['Manager',    'manager@company.com'],
+                ['User',       'eko@company.com'],
               ].map(([role, em]) => (
                 <button
                   key={role}
                   onClick={() => quickLogin(em)}
                   disabled={loading}
-                  style={{
-                    flex: 1,
-                    padding: '6px 4px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${T.border}`,
-                    borderRadius: 8,
-                    color: T.textDim,
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    transition: 'all .2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = T.accentSoft
-                    e.currentTarget.style.color = T.accent
-                    e.currentTarget.style.borderColor = T.borderAccent
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
-                    e.currentTarget.style.color = T.textDim
-                    e.currentTarget.style.borderColor = T.border
-                  }}
+                  className="flex-1 py-1.5 px-1 bg-white/[0.03] border border-gray-700 rounded-lg text-gray-500 text-[10px] font-semibold hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 disabled:cursor-not-allowed transition"
                 >
                   {role}
                 </button>
@@ -321,7 +145,8 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <p style={{ textAlign: 'center', color: T.textDim, fontSize: 11, marginTop: 20 }}>
+        {/* Footer */}
+        <p className="text-center text-gray-600 text-[11px] mt-5">
           PT Perusahaan Indonesia · v2.1.0
         </p>
       </div>

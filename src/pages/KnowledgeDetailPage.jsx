@@ -59,15 +59,22 @@ const EditModal = ({ article, onClose, onSave, loading }) => {
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
-      onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl"
-        onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center z-[1000] p-3 sm:p-5 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg my-4 sm:my-0 flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-gray-800">
           <p className="text-gray-100 font-bold text-base">Edit Artikel</p>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition"><X size={16} /></button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition">
+            <X size={16} />
+          </button>
         </div>
-        <div className="flex flex-col gap-4 px-5 py-4 overflow-y-auto">
+
+        <div className="flex flex-col gap-3.5 sm:gap-4 px-4 sm:px-5 py-4 overflow-y-auto max-h-[65vh]">
           <div>
             <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Judul</label>
             <input className={inputCls} value={form.title} onChange={set('title')} placeholder="Judul artikel..." />
@@ -80,7 +87,7 @@ const EditModal = ({ article, onClose, onSave, loading }) => {
           </div>
           <div>
             <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Konten</label>
-            <textarea className={`${inputCls} min-h-[160px] resize-y`} value={form.content}
+            <textarea className={`${inputCls} min-h-[140px] sm:min-h-[160px] resize-y`} value={form.content}
               onChange={set('content')} placeholder="Isi artikel..." />
           </div>
           <div>
@@ -90,16 +97,20 @@ const EditModal = ({ article, onClose, onSave, loading }) => {
             <input className={inputCls} value={form.tags} onChange={set('tags')} placeholder="vpn, network, setup" />
           </div>
         </div>
-        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-800">
+
+        {/* Footer: stacked on mobile, row on sm+ */}
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-4 sm:px-5 py-3.5 border-t border-gray-800">
           <button onClick={onClose} disabled={loading}
-            className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">Batal</button>
+            className="px-4 py-2.5 sm:py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition text-center">
+            Batal
+          </button>
           <button
             disabled={loading || !form.title.trim()}
             onClick={() => onSave(article?.id ?? null, {
               ...form,
               tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
             })}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
             <Save size={13} /> {loading ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
@@ -110,22 +121,28 @@ const EditModal = ({ article, onClose, onSave, loading }) => {
 
 // ─── DeleteModal ──────────────────────────────────────────────
 const DeleteModal = ({ article, onClose, onConfirm, loading }) => (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
-    onClick={onClose}>
-    <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl"
-      onClick={e => e.stopPropagation()}>
+  <div
+    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 sm:p-5"
+    onClick={onClose}
+  >
+    <div
+      className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-5 sm:p-6 text-center shadow-2xl"
+      onClick={e => e.stopPropagation()}
+    >
       <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
         <Trash2 size={20} className="text-red-400" />
       </div>
       <p className="text-gray-100 font-bold text-base mb-2">Hapus Artikel?</p>
-      <p className="text-gray-400 text-sm mb-5">
+      <p className="text-gray-400 text-sm mb-5 leading-relaxed">
         <strong className="text-gray-200">{article.title}</strong> akan dihapus secara permanen.
       </p>
-      <div className="flex gap-2 justify-center">
+      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-center">
         <button onClick={onClose} disabled={loading}
-          className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">Batal</button>
+          className="px-4 py-2.5 sm:py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+          Batal
+        </button>
         <button onClick={() => onConfirm(article.id)} disabled={loading}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition">
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition">
           <Trash2 size={12} /> {loading ? 'Menghapus...' : 'Ya, Hapus'}
         </button>
       </div>
@@ -135,7 +152,7 @@ const DeleteModal = ({ article, onClose, onConfirm, loading }) => (
 
 // ─── Toast ────────────────────────────────────────────────────
 const Toast = ({ message, type = 'success' }) => (
-  <div className={`fixed bottom-6 right-6 z-[2000] px-4 py-2.5 rounded-xl text-white text-sm font-medium shadow-2xl
+  <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[2000] px-4 py-2.5 rounded-xl text-white text-sm font-medium shadow-2xl max-w-[calc(100vw-2rem)]
     ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
     {message}
   </div>
@@ -206,7 +223,6 @@ const KnowledgeDetailPage = () => {
   }
 
   const handleRate = async (val) => {
-    // Optimistic update
     setArticle(a => ({ ...a, rating: val }))
     try {
       await authFetch(`/api/knowledge/${id}/rate`, {
@@ -221,7 +237,7 @@ const KnowledgeDetailPage = () => {
 
   // ── Loading ──
   if (loading) return (
-    <div className="flex flex-col gap-5 animate-pulse">
+    <div className="flex flex-col gap-4 sm:gap-5 animate-pulse px-0">
       <div className="h-8 w-48 bg-gray-800 rounded-lg" />
       <div className="h-32 bg-gray-800 rounded-2xl" />
       <div className="h-64 bg-gray-800 rounded-2xl" />
@@ -230,9 +246,9 @@ const KnowledgeDetailPage = () => {
 
   // ── Error ──
   if (error) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-3 px-4">
       <AlertTriangle size={40} className="text-red-500" />
-      <p className="text-red-400 text-sm">{error}</p>
+      <p className="text-red-400 text-sm text-center">{error}</p>
       <button onClick={() => navigate('/knowledge')}
         className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
         ← Kembali ke Knowledge Base
@@ -245,7 +261,7 @@ const KnowledgeDetailPage = () => {
   const tags = Array.isArray(a.tags) ? a.tags : []
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4 sm:gap-5">
 
       {/* Modals */}
       {showEdit && (
@@ -258,42 +274,45 @@ const KnowledgeDetailPage = () => {
       )}
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2.5">
+      {/* ── Breadcrumb ── */}
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
         <button onClick={() => navigate('/knowledge')}
-          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 transition bg-transparent border-none cursor-pointer">
+          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 transition bg-transparent border-none cursor-pointer shrink-0">
           <ArrowLeft size={15} /> Knowledge Base
         </button>
         <span className="text-gray-700">/</span>
-        <span className="text-gray-400 text-sm truncate max-w-[200px]">{a.title}</span>
+        <span className="text-gray-400 text-sm truncate max-w-[120px] sm:max-w-[240px]">{a.title}</span>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* Action buttons — right side */}
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={fetchArticle}
             className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-gray-700 text-gray-400 hover:bg-white/10 transition">
             <RefreshCw size={13} />
           </button>
           <button onClick={() => setShowEdit(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
-            <Edit2 size={13} /> Edit
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+            <Edit2 size={13} />
+            <span className="hidden sm:inline">Edit</span>
           </button>
           <button onClick={() => setShowDelete(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-800/60 text-red-400 text-sm hover:bg-red-500/10 transition">
-            <Trash2 size={13} /> Hapus
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-red-800/60 text-red-400 text-sm hover:bg-red-500/10 transition">
+            <Trash2 size={13} />
+            <span className="hidden sm:inline">Hapus</span>
           </button>
         </div>
       </div>
 
-      {/* Hero card */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-6 py-5">
+      {/* ── Hero card ── */}
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-4 sm:px-6 py-4 sm:py-5">
         {/* Category badge */}
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full border mb-3 ${cat.text} ${cat.bg} ${cat.border}`}>
           {CAT_ICON[a.category]} {a.category ?? 'General'}
         </span>
 
-        <h1 className="text-gray-100 font-bold text-xl leading-snug mb-3">{a.title}</h1>
+        <h1 className="text-gray-100 font-bold text-lg sm:text-xl leading-snug mb-3">{a.title}</h1>
 
-        {/* Meta */}
-        <div className="flex items-center gap-4 flex-wrap mb-4">
+        {/* Meta — wraps naturally on mobile */}
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap mb-4">
           {[[User, getAuthor(a) ?? 'Unknown'], [CalendarDays, a.date ?? '—'], [Eye, `${a.views ?? 0} views`]].map(([Ic, v], i) => (
             <span key={i} className="flex items-center gap-1.5 text-gray-500 text-xs">
               <Ic size={11} /> {v}
@@ -301,16 +320,16 @@ const KnowledgeDetailPage = () => {
           ))}
         </div>
 
-        {/* Star rating — interactive */}
+        {/* Star rating */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500">Rating:</span>
-          <StarRating value={a.rating ?? 0} onChange={handleRate} size={16} />
+          <StarRating value={a.rating ?? 0} onChange={handleRate} size={15} />
         </div>
 
         {/* Tags */}
         {tags.length > 0 && (
-          <div className="flex gap-2 flex-wrap mt-4 pt-4 border-t border-gray-800">
-            <Tag size={11} className="text-gray-600 mt-0.5" />
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap items-start mt-4 pt-4 border-t border-gray-800">
+            <Tag size={11} className="text-gray-600 mt-0.5 shrink-0" />
             {tags.map((t, i) => (
               <span key={i} className="text-[10px] text-gray-500 bg-white/4 border border-gray-700 px-2.5 py-0.5 rounded-full">
                 #{t}
@@ -320,11 +339,11 @@ const KnowledgeDetailPage = () => {
         )}
       </div>
 
-      {/* Content card */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-6 py-5">
+      {/* ── Content card ── */}
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-4 sm:px-6 py-4 sm:py-5">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-4">Konten</p>
         {a.content ? (
-          <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{a.content}</p>
+          <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{a.content}</p>
         ) : (
           <p className="text-gray-600 text-sm italic">Konten artikel tidak tersedia.</p>
         )}
