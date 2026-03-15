@@ -341,8 +341,8 @@ function UsersPage() {
         if(!token) throw new Error('Belum login')
         const headers = { Accept:'application/json', Authorization:`Bearer ${token}` }
         const [resUsers, resTickets] = await Promise.all([
-          fetch('http://localhost:8000/api/users', {headers}),
-          fetch('http://localhost:8000/api/tickets', {headers})
+          fetch('/api/users', {headers}),
+          fetch('/api/tickets', {headers})
         ])
         if(!resUsers.ok) throw new Error('Gagal fetch users')
         const dataUsers = await resUsers.json()
@@ -386,7 +386,7 @@ function UsersPage() {
 
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:8000/api/users', {
+      const res = await fetch('/api/users', {
         method:'POST',
         headers:{Accept:'application/json','Content-Type':'application/json', Authorization:`Bearer ${token}`},
         body: JSON.stringify(form)
@@ -409,7 +409,7 @@ function UsersPage() {
       const token = localStorage.getItem('token')
       let payload = { ...form }
       if(!payload.password) delete payload.password // jangan kirim password kosong
-      const res = await fetch(`http://localhost:8000/api/users/${id}`,{
+      const res = await fetch(`/api/users/${id}`,{
         method:'PUT',
         headers:{Accept:'application/json','Content-Type':'application/json',Authorization:`Bearer ${token}`},
         body: JSON.stringify(payload)
@@ -430,7 +430,7 @@ function UsersPage() {
     setActionLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/users/${id}`,{
+      const res = await fetch(`/api/users/${id}`,{
         method:'DELETE',
         headers:{Accept:'application/json', Authorization:`Bearer ${token}`}
       })
