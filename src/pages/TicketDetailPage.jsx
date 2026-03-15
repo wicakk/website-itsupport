@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, RefreshCw, Tag, Clock, User, Layers,
+  ArrowLeft, RefreshCw, Clock, User, Layers,
   AlertCircle, MessageSquare, Send, CheckCircle2,
-  UserCheck, RotateCcw, XCircle, Paperclip
+  UserCheck, RotateCcw, XCircle, Paperclip,
+  UserPlus, ChevronDown, Check, Search
 } from 'lucide-react'
 import { useAuth } from '../context/AppContext'
 import { Badge } from '../components/ui'
@@ -26,9 +27,10 @@ const InfoRow = ({ label, children }) => (
 )
 
 const COLOR = {
-  green: 'border-green-800 text-green-400 hover:bg-green-900/40',
-  blue:  'border-blue-800  text-blue-400  hover:bg-blue-900/40',
-  red:   'border-red-800   text-red-400   hover:bg-red-900/40',
+  green:  'border-green-800 text-green-400 hover:bg-green-900/40',
+  blue:   'border-blue-800  text-blue-400  hover:bg-blue-900/40',
+  red:    'border-red-800   text-red-400   hover:bg-red-900/40',
+  yellow: 'border-yellow-700 text-yellow-400 hover:bg-yellow-900/40',
 }
 
 const ActionButton = ({ icon: Icon, label, color, onClick, disabled }) => (
@@ -43,6 +45,98 @@ const ActionButton = ({ icon: Icon, label, color, onClick, disabled }) => (
   </button>
 )
 
+// ─── AssignDropdown ───────────────────────────────────────────
+const AssignDropdown = ({ agents, current, onAssign, assigning }) => {
+  const [open,   setOpen]   = useState(false)
+  const [search, setSearch] = useState('')
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filtered = agents.filter(a =>
+    a.name.toLowerCase().includes(search.toLowerCase()) ||
+    (a.email ?? '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handlePick = (agent) => { onAssign(agent.id); setOpen(false); setSearch('') }
+  const handleUnassign = () => { onAssign(null); setOpen(false); setSearch('') }
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        onClick={() => setOpen(o => !o)}
+        disabled={assigning}
+        className={`flex items-center gap-2 w-full px-3 py-2.5 sm:py-2 rounded-lg border text-xs font-medium transition
+          ${assigning ? 'border-gray-800 text-gray-600 cursor-not-allowed' : COLOR.yellow}`}
+      >
+        <UserPlus className="w-3.5 h-3.5 shrink-0" />
+        <span className="flex-1 text-left truncate">
+          {assigning ? 'Menyimpan...' : current ? `Reassign (${current})` : 'Assign Tiket'}
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 bottom-full mb-1.5 z-50 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800">
+            <Search className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Cari agent..."
+              className="flex-1 bg-transparent text-xs text-gray-200 placeholder-gray-500 outline-none"
+            />
+          </div>
+
+          <div className="max-h-48 overflow-y-auto">
+            {current && (
+              <button
+                onClick={handleUnassign}
+                className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs text-red-400 hover:bg-red-900/20 transition text-left border-b border-gray-800"
+              >
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                Hapus assignment
+              </button>
+            )}
+
+            {filtered.length === 0 ? (
+              <p className="text-xs text-gray-500 px-3 py-4 text-center">Agent tidak ditemukan.</p>
+            ) : (
+              filtered.map(agent => {
+                const isCurrent = current === agent.name
+                return (
+                  <button
+                    key={agent.id}
+                    onClick={() => handlePick(agent)}
+                    className={`flex items-center gap-2.5 w-full px-3 py-2.5 text-left transition
+                      ${isCurrent ? 'bg-yellow-900/20 text-yellow-300' : 'text-gray-300 hover:bg-gray-800'}`}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                      {agent.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-medium truncate">{agent.name}</span>
+                      {agent.email && (
+                        <span className="text-[10px] text-gray-500 truncate">{agent.email}</span>
+                      )}
+                    </div>
+                    {isCurrent && <Check className="w-3.5 h-3.5 ml-auto shrink-0 text-yellow-400" />}
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── TicketDetailPage ─────────────────────────────────────────
 const TicketDetailPage = () => {
   const { id }        = useParams()
@@ -55,6 +149,8 @@ const TicketDetailPage = () => {
   const [error,      setError]      = useState(null)
   const [comment,    setComment]    = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [agents,     setAgents]     = useState([])
+  const [assigning,  setAssigning]  = useState(false)
 
   const fetchTicket = async () => {
     setLoading(true); setError(null)
@@ -71,7 +167,16 @@ const TicketDetailPage = () => {
     }
   }
 
-  useEffect(() => { fetchTicket() }, [id])
+  const fetchAgents = async () => {
+    try {
+      const res = await authFetch('/api/users?role=agent')
+      if (!res.ok) return
+      const data = await res.json()
+      setAgents(Array.isArray(data) ? data : (data.data ?? []))
+    } catch { /* non-fatal */ }
+  }
+
+  useEffect(() => { fetchTicket(); fetchAgents() }, [id])
 
   const handleComment = async () => {
     if (!comment.trim()) return
@@ -107,11 +212,27 @@ const TicketDetailPage = () => {
     }
   }
 
+  const handleAssign = async (agentId) => {
+    setAssigning(true)
+    try {
+      const res = await authFetch(`/api/tickets/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignee_id: agentId })
+      })
+      if (!res.ok) throw new Error('Gagal mengassign tiket.')
+      await fetchTicket()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setAssigning(false)
+    }
+  }
+
   // ── Loading skeleton ──
   if (loading) return (
     <div className="flex flex-col gap-4 sm:gap-6 animate-pulse">
       <div className="h-8 w-48 bg-gray-800 rounded" />
-      {/* Skeleton: stacked on mobile, 3-col on lg */}
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 flex flex-col gap-4">
           <div className="h-40 bg-gray-800 rounded-xl" />
@@ -174,7 +295,6 @@ const TicketDetailPage = () => {
               </div>
             </div>
 
-            {/* Meta badges — wrap on mobile */}
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-gray-400">
               <span className="font-mono bg-gray-800 border border-gray-700 rounded px-2 py-0.5 whitespace-nowrap">
                 {t.ticket_number ?? `#${t.id}`}
@@ -195,7 +315,6 @@ const TicketDetailPage = () => {
               </p>
             )}
 
-            {/* Attachments */}
             {t.attachments?.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-800">
                 {t.attachments.map((a, i) => (
@@ -221,7 +340,6 @@ const TicketDetailPage = () => {
               </span>
             </div>
 
-            {/* Comment list */}
             <div className="flex flex-col divide-y divide-gray-800">
               {comments.length === 0 ? (
                 <p className="text-xs text-gray-500 px-5 py-6 text-center">Belum ada komentar.</p>
@@ -287,14 +405,12 @@ const TicketDetailPage = () => {
         </div>
 
         {/* ── RIGHT: Info sidebar ── */}
-        {/* On mobile: rendered after left column, full width */}
         <div className="flex flex-col gap-3.5 sm:gap-4">
 
           {/* Info card */}
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 sm:p-5 flex flex-col gap-3.5 sm:gap-4">
             <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Detail Tiket</span>
 
-            {/* On mobile: show as 2-col grid for compact display */}
             <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 sm:gap-4">
               <InfoRow label="Reporter">
                 <span className="flex items-center gap-1.5">
@@ -310,7 +426,10 @@ const TicketDetailPage = () => {
               <InfoRow label="Assigned To">
                 <span className="flex items-center gap-1.5">
                   <UserCheck className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                  <span className="truncate">{t.assignee?.name ?? 'Unassigned'}</span>
+                  {t.assignee?.name
+                    ? <span className="truncate text-yellow-300 font-medium">{t.assignee.name}</span>
+                    : <span className="text-gray-500 italic text-xs">Belum di-assign</span>
+                  }
                 </span>
               </InfoRow>
 
@@ -353,6 +472,15 @@ const TicketDetailPage = () => {
           {/* Quick actions */}
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-2">
             <span className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Aksi Cepat</span>
+
+            {/* ── Assign ── */}
+            <AssignDropdown
+              agents={agents}
+              current={t.assignee?.name ?? null}
+              onAssign={handleAssign}
+              assigning={assigning}
+            />
+
             <ActionButton
               icon={CheckCircle2}
               label="Tandai Resolved"
