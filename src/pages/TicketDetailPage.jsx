@@ -141,7 +141,7 @@ const AssignDropdown = ({ agents, current, onAssign, assigning }) => {
 const TicketDetailPage = () => {
   const { id }        = useParams()
   const navigate      = useNavigate()
-  const { authFetch } = useAuth()
+  const { authFetch, user: currentUser } = useAuth()
 
   const [ticket,     setTicket]     = useState(null)
   const [comments,   setComments]   = useState([])
@@ -168,12 +168,16 @@ const TicketDetailPage = () => {
   }
 
   const fetchAgents = async () => {
-    try {
-      const res = await authFetch('/api/users?role=agent')
-      if (!res.ok) return
-      const data = await res.json()
-      setAgents(Array.isArray(data) ? data : (data.data ?? []))
-    } catch { /* non-fatal */ }
+    const endpoints = ['/api/users?role=agent', '/api/users', '/api/agents', '/api/staff']
+    for (const url of endpoints) {
+      try {
+        const res = await authFetch(url)
+        if (!res.ok) continue
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : (data.data ?? data.users ?? data.agents ?? [])
+        if (list.length > 0) { setAgents(list); return }
+      } catch (e) { /* try next */ }
+    }
   }
 
   useEffect(() => { fetchTicket(); fetchAgents() }, [id])
@@ -473,7 +477,20 @@ const TicketDetailPage = () => {
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-2">
             <span className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Aksi Cepat</span>
 
-            {/* ── Assign ── */}
+            {/* ── Assign ke Saya ── */}
+            {currentUser && t.assignee?.id !== currentUser.id && (
+              <button
+                onClick={() => handleAssign(currentUser.id)}
+                disabled={assigning}
+                className={`flex items-center gap-2 w-full px-3 py-2.5 sm:py-2 rounded-lg border text-xs font-medium transition
+                  ${assigning ? 'border-gray-800 text-gray-600 cursor-not-allowed' : 'border-blue-700 text-blue-300 hover:bg-blue-900/30'}`}
+              >
+                <UserCheck className="w-3.5 h-3.5 shrink-0" />
+                Assign ke Saya
+              </button>
+            )}
+
+            {/* ── Assign ke agent lain ── */}
             <AssignDropdown
               agents={agents}
               current={t.assignee?.name ?? null}
