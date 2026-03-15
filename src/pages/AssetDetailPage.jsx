@@ -53,7 +53,7 @@ const inputCls = (err) =>
 
 // ─── Field ────────────────────────────────────────────────────
 const Field = ({ label, error, children, span }) => (
-  <div className={span ? 'col-span-2' : ''}>
+  <div className={span ? 'col-span-2 sm:col-span-2' : 'col-span-2 sm:col-span-1'}>
     <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
       {label}
     </label>
@@ -66,11 +66,11 @@ const Field = ({ label, error, children, span }) => (
 const Modal = ({ onClose, children, maxWidth = 'max-w-xl' }) => (
   <div
     onClick={onClose}
-    className="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+    className="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-start sm:items-center justify-center z-[1000] p-3 sm:p-5 overflow-y-auto"
   >
     <div
       onClick={e => e.stopPropagation()}
-      className={`bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full ${maxWidth} max-h-[92vh] overflow-y-auto shadow-2xl`}
+      className={`bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-6 w-full ${maxWidth} my-4 sm:my-0 shadow-2xl`}
     >
       {children}
     </div>
@@ -81,11 +81,11 @@ const ModalHeader = ({ title, subtitle, onClose }) => (
   <div className="flex items-start justify-between mb-5">
     <div>
       <p className="text-gray-100 font-bold text-base">{title}</p>
-      {subtitle && <p className="text-gray-400 text-xs mt-0.5">{subtitle}</p>}
+      {subtitle && <p className="text-gray-400 text-xs mt-0.5 break-all">{subtitle}</p>}
     </div>
     <button
       onClick={onClose}
-      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-gray-700 text-gray-400 hover:bg-white/10 transition"
+      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-gray-700 text-gray-400 hover:bg-white/10 transition shrink-0 ml-3"
     >
       <X size={14} />
     </button>
@@ -138,7 +138,8 @@ const AssetFormModal = ({ onClose, onSaved, editAsset }) => {
   return (
     <Modal onClose={onClose} maxWidth="max-w-lg">
       <ModalHeader title="Edit Aset" subtitle={`${editAsset.asset_number} · ${editAsset.serial_number}`} onClose={onClose} />
-      <div className="grid grid-cols-2 gap-3.5">
+      {/* Grid: 1 col on mobile, 2 col on sm+ */}
+      <div className="grid grid-cols-2 gap-3">
         <Field label="Nama Aset" error={errors.name} span>
           <input className={inputCls(errors.name)} placeholder="cth: Dell Latitude 5420" value={form.name} onChange={e => set('name', e.target.value)} />
         </Field>
@@ -207,12 +208,12 @@ const TABS = [
 ]
 
 const TabBar = ({ active, onChange }) => (
-  <div className="flex gap-1 mb-5 border-b border-gray-700">
+  <div className="flex gap-0.5 sm:gap-1 mb-5 border-b border-gray-700 overflow-x-auto scrollbar-none">
     {TABS.map(({ id, label, icon }) => (
       <button
         key={id}
         onClick={() => onChange(id)}
-        className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-t-lg border-b-2 transition cursor-pointer
+        className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 text-[11px] sm:text-xs font-medium rounded-t-lg border-b-2 transition cursor-pointer whitespace-nowrap shrink-0
           ${active === id
             ? 'bg-blue-500/10 text-blue-400 border-blue-500 font-bold'
             : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5'
@@ -240,7 +241,7 @@ const InfoTab = ({ asset }) => {
     ['Tgl Beli',      asset.purchase_date || '—'],
   ]
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {fields.map(([k, v]) => (
         <div key={k} className="bg-white/[0.03] rounded-xl px-3.5 py-2.5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1">{k}</p>
@@ -248,7 +249,7 @@ const InfoTab = ({ asset }) => {
         </div>
       ))}
       {asset.notes && (
-        <div className="col-span-2 bg-white/[0.03] rounded-xl px-3.5 py-2.5">
+        <div className="col-span-1 sm:col-span-2 bg-white/[0.03] rounded-xl px-3.5 py-2.5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1">Catatan</p>
           <p className="text-gray-400 text-sm">{asset.notes}</p>
         </div>
@@ -287,8 +288,8 @@ const QRTab = ({ asset }) => {
 
   return (
     <div className="flex flex-col items-center gap-5">
-      <div id="qr-preview" className="bg-white rounded-2xl p-6 flex flex-col items-center gap-3 shadow-2xl">
-        <QRCanvas value={qrValue} size={200} />
+      <div id="qr-preview" className="bg-white rounded-2xl p-4 sm:p-6 flex flex-col items-center gap-3 shadow-2xl w-full max-w-xs">
+        <QRCanvas value={qrValue} size={180} />
         <div className="text-center">
           <p className="text-slate-900 font-extrabold text-sm font-mono">{asset.asset_number}</p>
           <p className="text-slate-500 text-[11px] mt-0.5">{asset.name}</p>
@@ -296,13 +297,13 @@ const QRTab = ({ asset }) => {
         </div>
       </div>
 
-      <div className="flex gap-2.5">
+      <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
         <button onClick={handlePrint}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition">
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition">
           <PrintIcon size={14} /> Print QR
         </button>
         <button onClick={handleDownload}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
           <Download size={14} /> Download PNG
         </button>
       </div>
@@ -332,7 +333,8 @@ const DepTab = ({ asset }) => {
         <TrendingDown size={14} className="text-amber-400" /> Sum of Years Digits (SYD)
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5">
+      {/* Input: 1 col mobile, 3 col sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         {[['Harga Perolehan (Rp)', 'cost', 'contoh: 15000000'],
           ['Nilai Sisa (Rp)',      'salvage', 'contoh: 1500000'],
           ['Masa Manfaat (Thn)',   'life',    'contoh: 5']].map(([label, key, ph]) => (
@@ -351,7 +353,8 @@ const DepTab = ({ asset }) => {
 
       {rows.length > 0 && (
         <>
-          <div className="grid grid-cols-3 gap-2.5">
+          {/* Summary cards: 1 col mobile, 3 col sm+ */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {[['Total Depresiasi', `Rp ${formatRp(+form.cost - +form.salvage)}`, 'text-red-400',  'bg-red-400/10   border-red-400/20'],
               ['Nilai Sisa',       `Rp ${formatRp(+form.salvage)}`,              'text-emerald-400', 'bg-emerald-400/10 border-emerald-400/20'],
               ['Depresiasi Thn 1', `Rp ${formatRp(rows[0]?.depreciation)}`,      'text-blue-400', 'bg-blue-400/10  border-blue-400/20'],
@@ -363,19 +366,20 @@ const DepTab = ({ asset }) => {
             ))}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-gray-700">
-            <table className="w-full text-xs">
+          {/* Scrollable table on mobile */}
+          <div className="overflow-x-auto rounded-xl border border-gray-700 -mx-1 px-1">
+            <table className="w-full text-xs min-w-[480px]">
               <thead className="bg-gray-800">
                 <tr>
                   {['Tahun', 'Faktor', 'Depresiasi (Rp)', 'Akumulasi (Rp)', 'Nilai Buku (Rp)'].map(h => (
-                    <th key={h} className="px-3 py-2.5 text-right text-gray-400 font-semibold">{h}</th>
+                    <th key={h} className="px-3 py-2.5 text-right text-gray-400 font-semibold first:text-left">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i} className={`border-t border-gray-800 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
-                    <td className="px-3 py-2 text-right text-blue-400 font-bold">{r.year}</td>
+                    <td className="px-3 py-2 text-left text-blue-400 font-bold">{r.year}</td>
                     <td className="px-3 py-2 text-right text-gray-500 font-mono">{r.factor}</td>
                     <td className="px-3 py-2 text-right text-red-400">{formatRp(r.depreciation)}</td>
                     <td className="px-3 py-2 text-right text-gray-400">{formatRp(r.accumulated)}</td>
@@ -434,8 +438,9 @@ const PMTab = ({ asset, onRefresh }) => {
         <CalendarClock size={14} className="text-blue-400" /> Tambah Jadwal Maintenance
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
-        <div className="col-span-2">
+      {/* Form: 1 col mobile, 2 col sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="sm:col-span-2">
           <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Judul Maintenance</label>
           <input className={inputCls()} placeholder="cth: Cleaning & Thermal Paste" value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
@@ -451,7 +456,7 @@ const PMTab = ({ asset, onRefresh }) => {
           <input type="date" className={inputCls()} value={form.next_date}
             onChange={e => setForm(f => ({ ...f, next_date: e.target.value }))} />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Catatan (opsional)</label>
           <input className={inputCls()} placeholder="Instruksi khusus..." value={form.notes}
             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
@@ -497,19 +502,23 @@ const PMTab = ({ asset, onRefresh }) => {
 
             return (
               <div key={pm.id ?? pm.title}
-                className={`flex items-center gap-3 bg-white/[0.03] border ${colorMap.border} rounded-xl px-3.5 py-3`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colorMap.bg} ${colorMap.icon}`}>
-                  {done ? <CheckCheck size={16} /> : overdue ? <AlertCircle size={16} /> : <Bell size={16} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-gray-200 font-semibold text-sm">{pm.title}</p>
-                  <div className="flex gap-3 mt-1 flex-wrap">
-                    <span className="flex items-center gap-1 text-gray-500 text-[11px]"><RefreshCw size={9} /> {pm.interval}</span>
-                    <span className="flex items-center gap-1 text-gray-500 text-[11px]"><Calendar size={9} /> {pm.next_date}</span>
-                    {pm.last_done && <span className="flex items-center gap-1 text-gray-500 text-[11px]"><Clock size={9} /> Terakhir: {pm.last_done}</span>}
+                className={`flex flex-col sm:flex-row sm:items-center gap-3 bg-white/[0.03] border ${colorMap.border} rounded-xl px-3.5 py-3`}>
+                {/* Icon + text row */}
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colorMap.bg} ${colorMap.icon}`}>
+                    {done ? <CheckCheck size={16} /> : overdue ? <AlertCircle size={16} /> : <Bell size={16} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-200 font-semibold text-sm">{pm.title}</p>
+                    <div className="flex gap-3 mt-1 flex-wrap">
+                      <span className="flex items-center gap-1 text-gray-500 text-[11px]"><RefreshCw size={9} /> {pm.interval}</span>
+                      <span className="flex items-center gap-1 text-gray-500 text-[11px]"><Calendar size={9} /> {pm.next_date}</span>
+                      {pm.last_done && <span className="flex items-center gap-1 text-gray-500 text-[11px]"><Clock size={9} /> Terakhir: {pm.last_done}</span>}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0 pl-12 sm:pl-0">
                   <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${colorMap.badge}`}>
                     {statusLabel}
                   </span>
@@ -559,7 +568,7 @@ const AssetDetailPage = () => {
 
   // ── Loading ──
   if (loading) return (
-    <div className="flex flex-col gap-5 animate-pulse">
+    <div className="flex flex-col gap-5 animate-pulse p-4 sm:p-0">
       <div className="h-8 w-48 bg-gray-800 rounded-lg" />
       <div className="h-28 bg-gray-800 rounded-2xl" />
       <div className="h-96 bg-gray-800 rounded-2xl" />
@@ -568,9 +577,9 @@ const AssetDetailPage = () => {
 
   // ── Error ──
   if (error) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-3 px-4">
       <AlertTriangle size={40} className="text-red-500" />
-      <p className="text-red-400 text-sm">{error}</p>
+      <p className="text-red-400 text-sm text-center">{error}</p>
       <button onClick={() => navigate('/assets')}
         className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
         ← Kembali ke Assets
@@ -585,7 +594,7 @@ const AssetDetailPage = () => {
   const overdue = (a.pm_schedules ?? []).filter(isOverduePM).length
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4 sm:gap-5 px-0">
 
       {/* Edit Modal */}
       {showEdit && (
@@ -597,13 +606,13 @@ const AssetDetailPage = () => {
       )}
 
       {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
         <button onClick={() => navigate('/assets')}
           className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 transition bg-transparent border-none cursor-pointer">
           <ArrowLeft size={15} /> Assets
         </button>
         <span className="text-gray-700">/</span>
-        <span className="text-gray-200 text-sm font-mono">{a.asset_number}</span>
+        <span className="text-gray-200 text-sm font-mono truncate max-w-[120px] sm:max-w-none">{a.asset_number}</span>
 
         <div className="ml-auto flex items-center gap-2">
           <button onClick={fetchAsset}
@@ -612,57 +621,58 @@ const AssetDetailPage = () => {
           </button>
           <button onClick={() => setShowEdit(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
-            <Pencil size={13} /> Edit
+            <Pencil size={13} /> <span className="hidden xs:inline">Edit</span>
           </button>
         </div>
       </div>
 
       {/* ── Hero card ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-5 py-4">
-        <div className="flex items-center gap-4 flex-wrap">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-4 sm:px-5 py-4">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4">
           {/* Category icon */}
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
+          <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
             {cfg.icon}
           </div>
 
           {/* Title */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1.5">
-              <span className="font-mono text-[11px] text-gray-500 bg-white/5 border border-gray-700 rounded-md px-2 py-0.5">
+            {/* Badges — wrap on mobile */}
+            <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+              <span className="font-mono text-[11px] text-gray-500 bg-white/5 border border-gray-700 rounded-md px-2 py-0.5 whitespace-nowrap">
                 {a.asset_number}
               </span>
               <Badge label={a.status} cfg={sCfg} />
-              <span className="bg-white/5 border border-gray-700 text-gray-400 text-[11px] px-2.5 py-0.5 rounded-full">
+              <span className="bg-white/5 border border-gray-700 text-gray-400 text-[11px] px-2.5 py-0.5 rounded-full whitespace-nowrap">
                 {a.category}
               </span>
               {overdue > 0 && (
-                <span className="inline-flex items-center gap-1 bg-red-400/10 border border-red-400/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                <span className="inline-flex items-center gap-1 bg-red-400/10 border border-red-400/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
                   <Bell size={9} /> PM Terlambat {overdue}
                 </span>
               )}
               {expired && (
-                <span className="inline-flex items-center gap-1 bg-red-400/10 border border-red-400/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                <span className="inline-flex items-center gap-1 bg-red-400/10 border border-red-400/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
                   <AlertTriangle size={9} /> Garansi Expired
                 </span>
               )}
             </div>
-            <h1 className="text-gray-100 font-bold text-xl">{a.name}</h1>
-            <p className="text-gray-500 text-xs mt-1">S/N: {a.serial_number} · {a.brand} {a.model}</p>
+            <h1 className="text-gray-100 font-bold text-lg sm:text-xl leading-tight truncate">{a.name}</h1>
+            <p className="text-gray-500 text-xs mt-1 truncate">S/N: {a.serial_number} · {a.brand} {a.model}</p>
           </div>
+        </div>
 
-          {/* Meta */}
-          <div className="hidden md:flex flex-col gap-1.5 text-right shrink-0">
-            {[[Globe, a.location], [User, a.user || 'Unassigned'], [Shield, a.warranty_expiry || '—']].map(([Ic, val], i) => (
-              <div key={i} className="flex items-center justify-end gap-1.5 text-gray-500 text-xs">
-                <Ic size={11} /> {val}
-              </div>
-            ))}
-          </div>
+        {/* Meta info — shown below on mobile, right side on md+ */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 sm:mt-0 md:hidden">
+          {[[Globe, a.location], [User, a.user || 'Unassigned'], [Shield, a.warranty_expiry || '—']].map(([Ic, val], i) => (
+            <div key={i} className="flex items-center gap-1.5 text-gray-500 text-xs">
+              <Ic size={11} /> {val}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* ── Tab content ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-5 py-5">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-3 sm:px-5 py-4 sm:py-5">
         <TabBar active={tab} onChange={setTab} />
         {tab === 'info' && <InfoTab asset={a} />}
         {tab === 'qr'   && <QRTab   asset={a} />}
