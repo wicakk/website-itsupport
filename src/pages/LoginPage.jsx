@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Shield, Mail, Lock, Loader } from 'lucide-react'
 import { useAuth } from '../context/AppContext'
+import { useTheme } from '../context/ThemeContext'
 
 const LoginPage = () => {
   const { login } = useAuth()
-  const [email,   setEmail]   = useState('')
-  const [pass,    setPass]    = useState('')
-  const [error,   setError]   = useState('')
+  const { isDark } = useTheme()
+  const [email, setEmail]   = useState('')
+  const [pass, setPass]     = useState('')
+  const [error, setError]   = useState('')
   const [loading, setLoading] = useState(false)
 
   const submit = async () => {
@@ -21,8 +23,8 @@ const LoginPage = () => {
       const data = await res.json()
       if (!res.ok) {
         let msg = 'Login gagal.'
-        if (data.errors)        msg = Object.values(data.errors).flat().join(' ')
-        else if (data.message)  msg = data.message
+        if (data.errors)       msg = Object.values(data.errors).flat().join(' ')
+        else if (data.message) msg = data.message
         setError(msg); return
       }
       login(data.user, data.token)
@@ -37,95 +39,155 @@ const LoginPage = () => {
   const quickLogin = (em) => { setEmail(em); setPass('password'); setError('') }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4 py-8 relative overflow-hidden">
+    <div className={`
+      min-h-screen flex items-center justify-center p-4
+      relative overflow-hidden transition-colors duration-300
+      ${isDark ? 'bg-[#050A14]' : 'bg-slate-100'}
+    `}>
 
       {/* Background glows */}
-      <div className="absolute top-[18%] left-[12%] w-[420px] h-[420px] rounded-full bg-[radial-gradient(circle,rgba(59,139,255,0.06)_0%,transparent_68%)] pointer-events-none" />
-      <div className="absolute bottom-[18%] right-[12%] w-[320px] h-[320px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.1)_0%,transparent_68%)] pointer-events-none" />
+      <div className={`
+        pointer-events-none absolute top-[18%] left-[12%] w-[420px] h-[420px]
+        rounded-full blur-3xl
+        ${isDark ? 'bg-blue-500/10' : 'bg-blue-400/10'}
+      `} />
+      <div className={`
+        pointer-events-none absolute bottom-[18%] right-[12%] w-[320px] h-[320px]
+        rounded-full blur-3xl
+        ${isDark ? 'bg-violet-500/15' : 'bg-violet-400/10'}
+      `} />
 
       <div className="w-full max-w-sm relative z-10">
 
-        {/* ── Logo ── */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-4 shadow-[0_8px_28px_rgba(59,139,255,0.35)]">
-            <Shield size={22} className="text-white" />
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700
+            flex items-center justify-center mx-auto mb-4
+            shadow-[0_8px_28px_rgba(59,139,255,0.35)]
+            w-[52px] h-[52px]">
+            <Shield size={22} color="#fff" />
           </div>
-          <h1 className="text-gray-100 font-extrabold text-[22px]">IT Support System</h1>
-          <p className="text-gray-500 text-xs mt-1">Enterprise Management Platform</p>
+          <h1 className={`font-extrabold text-[22px] ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+            IT Support System
+          </h1>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            Enterprise Management Platform
+          </p>
         </div>
 
-        {/* ── Card ── */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 sm:p-7 shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+        {/* Card */}
+        <div className={`
+          rounded-2xl p-7 border transition-colors duration-300
+          ${isDark
+            ? 'bg-[#0D1626] border-white/[0.06] shadow-[0_24px_64px_rgba(0,0,0,0.5)]'
+            : 'bg-white border-black/[0.07] shadow-[0_24px_64px_rgba(0,0,0,0.10)]'}
+        `}>
 
           {/* Email */}
           <div className="mb-4">
-            <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+            <label className={`
+              block text-[11px] font-semibold uppercase tracking-widest mb-1.5
+              ${isDark ? 'text-slate-500' : 'text-slate-400'}
+            `}>
               Email
             </label>
             <div className="relative">
-              <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <Mail size={13} className={`
+                absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none
+                ${isDark ? 'text-slate-600' : 'text-slate-400'}
+              `} />
               <input
                 type="email"
                 value={email}
-                onChange={e => { setEmail(e.target.value); setError('') }}
+                onChange={(e) => { setEmail(e.target.value); setError('') }}
                 placeholder="nama@perusahaan.com"
                 disabled={loading}
-                onKeyDown={e => e.key === 'Enter' && submit()}
-                className="w-full bg-white/5 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition disabled:opacity-60"
+                className={`
+                  w-full pl-9 pr-3 py-2.5 rounded-xl text-[13px] outline-none
+                  border transition-all duration-200 disabled:opacity-60
+                  ${isDark
+                    ? 'bg-white/[0.04] border-white/[0.06] text-slate-100 placeholder-slate-600 focus:border-blue-500'
+                    : 'bg-slate-50 border-black/[0.08] text-slate-900 placeholder-slate-400 focus:border-blue-500'}
+                `}
               />
             </div>
           </div>
 
           {/* Password */}
           <div className="mb-4">
-            <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
+            <label className={`
+              block text-[11px] font-semibold uppercase tracking-widest mb-1.5
+              ${isDark ? 'text-slate-500' : 'text-slate-400'}
+            `}>
               Password
             </label>
             <div className="relative">
-              <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <Lock size={13} className={`
+                absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none
+                ${isDark ? 'text-slate-600' : 'text-slate-400'}
+              `} />
               <input
                 type="password"
                 value={pass}
-                onChange={e => { setPass(e.target.value); setError('') }}
+                onChange={(e) => { setPass(e.target.value); setError('') }}
                 placeholder="••••••••"
                 disabled={loading}
-                onKeyDown={e => e.key === 'Enter' && submit()}
-                className="w-full bg-white/5 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition disabled:opacity-60"
+                onKeyDown={(e) => e.key === 'Enter' && submit()}
+                className={`
+                  w-full pl-9 pr-3 py-2.5 rounded-xl text-[13px] outline-none
+                  border transition-all duration-200 disabled:opacity-60
+                  ${isDark
+                    ? 'bg-white/[0.04] border-white/[0.06] text-slate-100 placeholder-slate-600 focus:border-blue-500'
+                    : 'bg-slate-50 border-black/[0.08] text-slate-900 placeholder-slate-400 focus:border-blue-500'}
+                `}
               />
             </div>
           </div>
 
-          {/* Remember + Forgot */}
+          {/* Options */}
           <div className="flex items-center justify-between mb-4 text-xs">
-            <label className="flex items-center gap-1.5 text-gray-500 cursor-pointer select-none">
-              <input type="checkbox" className="accent-blue-500 cursor-pointer" /> Ingat saya
+            <label className={`flex items-center gap-1.5 cursor-pointer ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+              <input type="checkbox" className="accent-blue-500" />
+              Ingat saya
             </label>
-            <button className="text-blue-400 hover:text-blue-300 transition bg-transparent border-none cursor-pointer text-xs">
+            <button className="text-blue-500 hover:text-blue-400 transition-colors bg-transparent border-none cursor-pointer text-xs">
               Lupa password?
             </button>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/25 rounded-lg px-3 py-2 text-red-400 text-xs mb-4">
+            <div className="bg-red-500/10 border border-red-500/25 rounded-lg px-3 py-2
+              text-red-400 text-xs mb-3.5">
               {error}
             </div>
           )}
 
-          {/* Login button */}
+          {/* Button Login */}
           <button
             onClick={submit}
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(59,139,255,0.35)] hover:brightness-110 disabled:opacity-80 disabled:cursor-not-allowed transition"
+            className={`
+              w-full py-3 rounded-xl text-sm font-bold text-white
+              bg-gradient-to-r from-blue-500 to-blue-700
+              shadow-[0_6px_20px_rgba(59,139,255,0.35)]
+              flex items-center justify-center gap-2
+              transition-all duration-200
+              hover:shadow-[0_8px_26px_rgba(59,139,255,0.45)] hover:brightness-110
+              disabled:opacity-80 disabled:cursor-not-allowed
+            `}
           >
-            {loading ? (
-              <><Loader size={15} className="animate-spin" /> Memproses...</>
-            ) : 'Masuk'}
+            {loading
+              ? <><Loader size={15} className="animate-spin" /> Memproses...</>
+              : 'Masuk'
+            }
           </button>
 
           {/* Quick login demo */}
-          <div className="mt-5">
-            <p className="text-gray-600 text-[10px] text-center mb-2">Akses cepat demo</p>
+          <div className="mt-4">
+            <p className={`text-[10px] text-center mb-2 ${isDark ? 'text-slate-700' : 'text-slate-400'}`}>
+              Akses cepat demo
+            </p>
             <div className="flex gap-1.5">
               {[
                 ['IT Support', 'rizky@company.com'],
@@ -136,7 +198,14 @@ const LoginPage = () => {
                   key={role}
                   onClick={() => quickLogin(em)}
                   disabled={loading}
-                  className="flex-1 py-1.5 px-1 bg-white/[0.03] border border-gray-700 rounded-lg text-gray-500 text-[10px] font-semibold hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 disabled:cursor-not-allowed transition"
+                  className={`
+                    flex-1 py-1.5 rounded-lg text-[10px] font-semibold
+                    border transition-all duration-200 cursor-pointer
+                    disabled:cursor-not-allowed
+                    ${isDark
+                      ? 'bg-white/[0.03] border-white/[0.06] text-slate-600 hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30'
+                      : 'bg-slate-50 border-black/[0.07] text-slate-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-300'}
+                  `}
                 >
                   {role}
                 </button>
@@ -145,8 +214,7 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-gray-600 text-[11px] mt-5">
+        <p className={`text-center text-[11px] mt-5 ${isDark ? 'text-slate-700' : 'text-slate-400'}`}>
           PT Perusahaan Indonesia · v2.1.0
         </p>
       </div>

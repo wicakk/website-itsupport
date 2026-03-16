@@ -156,7 +156,7 @@ const ReportsPage = () => {
       <PageHeader title="Reports" subtitle="Generate dan export laporan IT Support" />
 
       {/* ── Report Cards: 1 col mobile, 2 col sm+ ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+      <div  className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
         {REPORTS.map(({ key, title, desc, icon: Icon, color }) => {
           const isOpenPreview = preview?.key === key
           const isPrevLoading = previewLoading === key
@@ -188,7 +188,7 @@ const ReportsPage = () => {
                 >
                   {isPrevLoading
                     ? <><Loader2 size={11} className="animate-spin" /> Memuat...</>
-                    : <><FileText size={11} /> <span className="hidden xs:inline">{isOpenPreview ? 'Tutup' : 'Preview'}</span><span className="xs:hidden">{isOpenPreview ? '✕' : '👁'}</span></>
+                    : <><FileText size={11} /> <span className="hidden xs:inline">{isOpenPreview ? 'Tutup' : 'Preview'}</span><span className="xs:hidden">{isOpenPreview ? '✕' : 'show'}</span></>
                   }
                 </button>
 

@@ -1,33 +1,30 @@
-/**
- * AssetsPage.jsx — Tailwind responsive version
- */
-
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Globe, User, Shield, MoreHorizontal, Laptop, Printer, Network,
   Server, Monitor, Package, CheckCircle2, Wrench, AlertTriangle, X,
-  TrendingDown, CalendarClock, Eye, Pencil, Trash2, Bell,
+  CalendarClock, Eye, Pencil, Trash2, Bell,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { ASSET_STATUS_CFG } from '../theme'
-import { Card, Badge, PageHeader, SearchBar, PrimaryButton, StatCard, EmptyState } from '../components/ui'
+import { Badge, PageHeader, SearchBar, PrimaryButton, StatCard, EmptyState } from '../components/ui'
 import { useAuth } from '../context/AppContext'
+import { useTheme } from '../context/ThemeContext'
 import useSearch from '../hooks/useSearch'
 
 // ─── Constants ────────────────────────────────────────────────
 const CATEGORIES = ['Laptop', 'Desktop', 'Printer', 'Network', 'Server', 'Phone', 'Monitor', 'Others']
 const STATUSES   = ['Active', 'Maintenance', 'Inactive', 'Disposed']
 
-const CAT_CFG = {
-  Laptop:  { icon: <Laptop  size={20} />, color: 'text-blue-400',   bg: 'bg-blue-400/10',   border: 'border-blue-400/20'   },
-  Desktop: { icon: <Monitor size={20} />, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-  Printer: { icon: <Printer size={20} />, color: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'border-violet-400/20'  },
-  Network: { icon: <Network size={20} />, color: 'text-cyan-400',    bg: 'bg-cyan-400/10',    border: 'border-cyan-400/20'    },
-  Server:  { icon: <Server  size={20} />, color: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'border-amber-400/20'   },
-  Phone:   { icon: <Package size={20} />, color: 'text-pink-400',    bg: 'bg-pink-400/10',    border: 'border-pink-400/20'    },
-  Monitor: { icon: <Monitor size={20} />, color: 'text-teal-400',    bg: 'bg-teal-400/10',    border: 'border-teal-400/20'    },
-  Others:  { icon: <Package size={20} />, color: 'text-slate-400',   bg: 'bg-slate-400/10',   border: 'border-slate-400/20'   },
+const CAT_COLORS = {
+  Laptop:  { color: '#60A5FA', bg: 'rgba(96,165,250,0.10)',  border: 'rgba(96,165,250,0.20)',  icon: Laptop  },
+  Desktop: { color: '#34D399', bg: 'rgba(52,211,153,0.10)',  border: 'rgba(52,211,153,0.20)',  icon: Monitor },
+  Printer: { color: '#A78BFA', bg: 'rgba(167,139,250,0.10)', border: 'rgba(167,139,250,0.20)', icon: Printer },
+  Network: { color: '#22D3EE', bg: 'rgba(34,211,238,0.10)',  border: 'rgba(34,211,238,0.20)',  icon: Network },
+  Server:  { color: '#FBBF24', bg: 'rgba(251,191,36,0.10)',  border: 'rgba(251,191,36,0.20)',  icon: Server  },
+  Phone:   { color: '#F472B6', bg: 'rgba(244,114,182,0.10)', border: 'rgba(244,114,182,0.20)', icon: Package },
+  Monitor: { color: '#2DD4BF', bg: 'rgba(45,212,191,0.10)',  border: 'rgba(45,212,191,0.20)',  icon: Monitor },
+  Others:  { color: '#94A3B8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.20)', icon: Package },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -36,71 +33,99 @@ const isOverduePM  = (pm) => pm.status !== 'Selesai' && pm.next_date && new Date
 const countOverdue = (a)  => (a.pm_schedules ?? []).filter(isOverduePM).length
 
 // ─── Modal shell ──────────────────────────────────────────────
-const Modal = ({ onClose, children, maxWidth = 'max-w-xl' }) => (
+const Modal = ({ onClose, children, maxWidth = 520, theme }) => (
   <div
     onClick={onClose}
-    className="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-start sm:items-center justify-center z-[1000] p-3 sm:p-5 overflow-y-auto"
+    style={{
+      position: 'fixed', inset: 0, background: theme.overlay,
+      backdropFilter: 'blur(4px)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: 12, overflowY: 'auto',
+    }}
   >
     <div
       onClick={e => e.stopPropagation()}
-      className={`bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-6 w-full ${maxWidth} my-4 sm:my-0 shadow-2xl`}
+      style={{
+        background: theme.surface, border: `1px solid ${theme.border}`,
+        borderRadius: 18, padding: '20px 24px',
+        width: '100%', maxWidth, boxShadow: '0 25px 60px rgba(0,0,0,0.35)',
+        margin: '16px 0',
+      }}
     >
       {children}
     </div>
   </div>
 )
 
-const ModalHeader = ({ title, subtitle, onClose }) => (
-  <div className="flex items-start justify-between mb-5">
+const ModalHeader = ({ title, subtitle, onClose, theme }) => (
+  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
     <div>
-      <div className="text-gray-100 font-bold text-base">{title}</div>
-      {subtitle && <div className="text-gray-400 text-xs mt-0.5 break-all">{subtitle}</div>}
+      <div style={{ color: theme.text, fontWeight: 700, fontSize: 15 }}>{title}</div>
+      {subtitle && <div style={{ color: theme.textMuted, fontSize: 11, marginTop: 2, wordBreak: 'break-all' }}>{subtitle}</div>}
     </div>
     <button
       onClick={onClose}
-      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-gray-700 text-gray-400 hover:bg-white/10 transition shrink-0 ml-3"
-    >
-      <X size={14} />
-    </button>
+      style={{
+        width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: 8, background: theme.surfaceAlt, border: `1px solid ${theme.border}`,
+        color: theme.textMuted, cursor: 'pointer', flexShrink: 0, marginLeft: 12,
+      }}
+    ><X size={13} /></button>
   </div>
 )
 
-// Field: full-width on mobile, respects span on sm+
-const Field = ({ label, error, children, span }) => (
-  <div className={span ? 'col-span-2' : 'col-span-2 sm:col-span-1'}>
-    <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
-      {label}
-    </label>
+// ─── Field ────────────────────────────────────────────────────
+const Field = ({ label, error, children, span, theme }) => (
+  <div style={{ gridColumn: span ? 'span 2' : 'span 1' }}>
+    <label style={{
+      display: 'block', fontSize: 10, fontWeight: 600,
+      textTransform: 'uppercase', letterSpacing: '0.08em',
+      color: theme.textMuted, marginBottom: 6,
+    }}>{label}</label>
     {children}
-    {error && <p className="text-red-400 text-[11px] mt-1">{error}</p>}
+    {error && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{error}</p>}
   </div>
 )
 
-const inputCls = (err) =>
-  `w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition ${
-    err ? 'border-red-500' : 'border-gray-700'
-  }`
+const makeInputStyle = (theme, hasError) => ({
+  width: '100%', background: theme.surfaceAlt,
+  border: `1px solid ${hasError ? theme.danger : theme.border}`,
+  borderRadius: 8, padding: '8px 12px',
+  fontSize: 13, color: theme.text, outline: 'none',
+  boxSizing: 'border-box', fontFamily: 'inherit',
+  transition: 'border-color 0.2s',
+})
 
 // ─── Confirm Delete Modal ─────────────────────────────────────
-const ConfirmDeleteModal = ({ asset, onClose, onConfirm, deleting }) => (
-  <Modal onClose={onClose} maxWidth="max-w-sm">
-    <ModalHeader title="Hapus Aset" onClose={onClose} />
-    <div className="flex flex-col gap-4">
-      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-        <p className="text-red-400 font-semibold text-sm mb-1">Konfirmasi Penghapusan</p>
-        <p className="text-gray-400 text-xs leading-relaxed">
-          Aset <strong className="text-gray-200">{asset.name}</strong> ({asset.asset_number}) akan
+const ConfirmDeleteModal = ({ asset, onClose, onConfirm, deleting, theme }) => (
+  <Modal onClose={onClose} maxWidth={400} theme={theme}>
+    <ModalHeader title="Hapus Aset" onClose={onClose} theme={theme} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{
+        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+        borderRadius: 12, padding: 16,
+      }}>
+        <p style={{ color: theme.danger, fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Konfirmasi Penghapusan</p>
+        <p style={{ color: theme.textMuted, fontSize: 12, lineHeight: 1.6, margin: 0 }}>
+          Aset <strong style={{ color: theme.text }}>{asset.name}</strong> ({asset.asset_number}) akan
           dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
         </p>
       </div>
-      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-        <button onClick={onClose} className="px-4 py-2.5 sm:py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition text-center">
-          Batal
-        </button>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button onClick={onClose} style={{
+          padding: '8px 16px', borderRadius: 8,
+          border: `1px solid ${theme.border}`, background: 'transparent',
+          color: theme.textMuted, fontSize: 13, cursor: 'pointer',
+        }}>Batal</button>
         <button
-          onClick={onConfirm}
-          disabled={deleting}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 text-sm font-semibold hover:bg-red-500/30 disabled:opacity-50 transition"
+          onClick={onConfirm} disabled={deleting}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', borderRadius: 8,
+            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)',
+            color: theme.danger, fontSize: 13, fontWeight: 600,
+            cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.6 : 1,
+          }}
         >
           <Trash2 size={13} /> {deleting ? 'Menghapus...' : 'Hapus Aset'}
         </button>
@@ -110,7 +135,7 @@ const ConfirmDeleteModal = ({ asset, onClose, onConfirm, deleting }) => (
 )
 
 // ─── More Dropdown ────────────────────────────────────────────
-const MoreDropdown = ({ asset, onEdit, onDelete }) => {
+const MoreDropdown = ({ asset, onEdit, onDelete, theme }) => {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -121,29 +146,50 @@ const MoreDropdown = ({ asset, onEdit, onDelete }) => {
   }, [])
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
-        className="w-[30px] h-[30px] flex items-center justify-center rounded-lg bg-white/5 border border-gray-700/50 text-gray-400 hover:bg-white/10 transition"
-      >
-        <MoreHorizontal size={13} />
-      </button>
+        style={{
+          width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 8, background: theme.surfaceAlt, border: `1px solid ${theme.border}`,
+          color: theme.textMuted, cursor: 'pointer',
+        }}
+      ><MoreHorizontal size={13} /></button>
 
       {open && (
         <div
           onClick={e => e.stopPropagation()}
-          className="absolute top-[110%] right-0 z-[999] bg-gray-900 border border-gray-700 rounded-xl p-1 min-w-[150px] shadow-2xl"
+          style={{
+            position: 'absolute', top: '110%', right: 0, zIndex: 999,
+            background: theme.surface, border: `1px solid ${theme.border}`,
+            borderRadius: 12, padding: 4, minWidth: 150,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+          }}
         >
           <button
             onClick={() => { onEdit(asset); setOpen(false) }}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/6 hover:text-gray-200 transition text-left"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              width: '100%', padding: '8px 12px', borderRadius: 8,
+              fontSize: 12, color: theme.textMuted, background: 'none',
+              border: 'none', cursor: 'pointer', textAlign: 'left',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = theme.surfaceHover}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             <Pencil size={12} /> Edit Aset
           </button>
-          <div className="h-px bg-gray-700 my-1" />
+          <div style={{ height: 1, background: theme.border, margin: '4px 0' }} />
           <button
             onClick={() => { onDelete(asset); setOpen(false) }}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition text-left"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              width: '100%', padding: '8px 12px', borderRadius: 8,
+              fontSize: 12, color: theme.danger, background: 'none',
+              border: 'none', cursor: 'pointer', textAlign: 'left',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             <Trash2 size={12} /> Hapus Aset
           </button>
@@ -153,7 +199,7 @@ const MoreDropdown = ({ asset, onEdit, onDelete }) => {
   )
 }
 
-// ─── Add / Edit Asset Modal ───────────────────────────────────
+// ─── AssetFormModal ───────────────────────────────────────────
 const EMPTY_FORM = {
   name: '', category: 'Laptop', brand: '', model: '',
   serial_number: '', location: '', user: '',
@@ -161,7 +207,7 @@ const EMPTY_FORM = {
   purchase_date: '', purchase_price: '', notes: '',
 }
 
-const AssetFormModal = ({ onClose, onSaved, editAsset = null }) => {
+const AssetFormModal = ({ onClose, onSaved, editAsset = null, theme }) => {
   const { authFetch }   = useAuth()
   const isEdit          = !!editAsset
   const [form, setForm] = useState(isEdit ? { ...EMPTY_FORM, ...editAsset } : EMPTY_FORM)
@@ -199,88 +245,97 @@ const AssetFormModal = ({ onClose, onSaved, editAsset = null }) => {
     }
   }
 
+  const inp = (hasError) => makeInputStyle(theme, hasError)
+
   return (
-    <Modal onClose={onClose} maxWidth="max-w-lg">
+    <Modal onClose={onClose} maxWidth={560} theme={theme}>
       <ModalHeader
         title={isEdit ? 'Edit Aset' : 'Tambah Aset Baru'}
         subtitle={isEdit ? `${editAsset.asset_number} · ${editAsset.serial_number}` : 'Isi detail aset yang akan didaftarkan'}
         onClose={onClose}
+        theme={theme}
       />
-      {/* 2-col grid: each Field is full-width on mobile, half-width on sm+ unless span */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
-        <Field label="Nama Aset" error={errors.name} span>
-          <input className={inputCls(errors.name)} placeholder="cth: Dell Latitude 5420" value={form.name} onChange={e => set('name', e.target.value)} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label="Nama Aset" error={errors.name} span theme={theme}>
+          <input style={inp(errors.name)} placeholder="cth: Dell Latitude 5420" value={form.name} onChange={e => set('name', e.target.value)} />
         </Field>
-        <Field label="Kategori">
-          <select className={inputCls()} value={form.category} onChange={e => set('category', e.target.value)}>
+        <Field label="Kategori" theme={theme}>
+          <select style={inp(false)} value={form.category} onChange={e => set('category', e.target.value)}>
             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
           </select>
         </Field>
-        <Field label="Status">
-          <select className={inputCls()} value={form.status} onChange={e => set('status', e.target.value)}>
+        <Field label="Status" theme={theme}>
+          <select style={inp(false)} value={form.status} onChange={e => set('status', e.target.value)}>
             {STATUSES.map(st => <option key={st}>{st}</option>)}
           </select>
         </Field>
-        <Field label="Brand">
-          <input className={inputCls()} placeholder="Dell" value={form.brand} onChange={e => set('brand', e.target.value)} />
+        <Field label="Brand" theme={theme}>
+          <input style={inp(false)} placeholder="Dell" value={form.brand} onChange={e => set('brand', e.target.value)} />
         </Field>
-        <Field label="Model">
-          <input className={inputCls()} placeholder="Latitude 5420" value={form.model} onChange={e => set('model', e.target.value)} />
+        <Field label="Model" theme={theme}>
+          <input style={inp(false)} placeholder="Latitude 5420" value={form.model} onChange={e => set('model', e.target.value)} />
         </Field>
-        <Field label="Serial Number" error={errors.serial_number}>
-          <input className={inputCls(errors.serial_number)} placeholder="SN-XXXXXXXX" value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
+        <Field label="Serial Number" error={errors.serial_number} theme={theme}>
+          <input style={inp(errors.serial_number)} placeholder="SN-XXXXXXXX" value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
         </Field>
-        <Field label="Lokasi" error={errors.location}>
-          <input className={inputCls(errors.location)} placeholder="Ruang IT Lt. 2" value={form.location} onChange={e => set('location', e.target.value)} />
+        <Field label="Lokasi" error={errors.location} theme={theme}>
+          <input style={inp(errors.location)} placeholder="Ruang IT Lt. 2" value={form.location} onChange={e => set('location', e.target.value)} />
         </Field>
-        <Field label="Pengguna">
-          <input className={inputCls()} placeholder="(opsional)" value={form.user} onChange={e => set('user', e.target.value)} />
+        <Field label="Pengguna" theme={theme}>
+          <input style={inp(false)} placeholder="(opsional)" value={form.user} onChange={e => set('user', e.target.value)} />
         </Field>
-        <Field label="Tgl Beli">
-          <input type="date" className={inputCls()} value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} />
+        <Field label="Tgl Beli" theme={theme}>
+          <input type="date" style={inp(false)} value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} />
         </Field>
-        <Field label="Harga Beli (Rp)">
-          <input type="number" className={inputCls()} placeholder="15000000" value={form.purchase_price} onChange={e => set('purchase_price', e.target.value)} />
+        <Field label="Harga Beli (Rp)" theme={theme}>
+          <input type="number" style={inp(false)} placeholder="15000000" value={form.purchase_price} onChange={e => set('purchase_price', e.target.value)} />
         </Field>
-        <Field label="Garansi s/d" span>
-          <input type="date" className={inputCls()} value={form.warranty_expiry} onChange={e => set('warranty_expiry', e.target.value)} />
+        <Field label="Garansi s/d" span theme={theme}>
+          <input type="date" style={inp(false)} value={form.warranty_expiry} onChange={e => set('warranty_expiry', e.target.value)} />
         </Field>
-        <Field label="Catatan" span>
-          <input className={inputCls()} placeholder="(opsional)" value={form.notes} onChange={e => set('notes', e.target.value)} />
+        <Field label="Catatan" span theme={theme}>
+          <input style={inp(false)} placeholder="(opsional)" value={form.notes} onChange={e => set('notes', e.target.value)} />
         </Field>
       </div>
 
       {errors._global && (
-        <div className="mt-3 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs">
-          {errors._global}
-        </div>
+        <div style={{
+          marginTop: 12, padding: '10px 12px',
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+          borderRadius: 8, color: theme.danger, fontSize: 12,
+        }}>{errors._global}</div>
       )}
 
-      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end mt-5">
-        <button onClick={onClose} className="px-4 py-2.5 sm:py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition text-center">
-          Batal
-        </button>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+        <button onClick={onClose} style={{
+          padding: '8px 16px', borderRadius: 8,
+          border: `1px solid ${theme.border}`, background: 'transparent',
+          color: theme.textMuted, fontSize: 13, cursor: 'pointer',
+        }}>Batal</button>
         <button
-          onClick={handleSubmit}
-          disabled={saving}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          {saving ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Simpan Aset'}
-        </button>
+          onClick={handleSubmit} disabled={saving}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 18px', borderRadius: 8,
+            background: theme.accent, color: '#fff',
+            border: 'none', fontSize: 13, fontWeight: 600,
+            cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
+          }}
+        >{saving ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Simpan Aset'}</button>
       </div>
     </Modal>
   )
 }
 
 // ─── Pagination ───────────────────────────────────────────────
-const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange }) => {
+const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange, theme }) => {
   if (total === 0) return null
 
   const getPages = () => {
     if (lastPage <= 1) return [1]
-    const delta  = 1 // tighter on mobile
-    const left   = Math.max(2, currentPage - delta)
-    const right  = Math.min(lastPage - 1, currentPage + delta)
+    const delta = 1
+    const left  = Math.max(2, currentPage - delta)
+    const right = Math.min(lastPage - 1, currentPage + delta)
     const middle = []
     for (let i = left; i <= right; i++) middle.push(i)
     const pages = [1]
@@ -294,44 +349,44 @@ const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange }) => 
   const from = Math.min((currentPage - 1) * perPage + 1, total)
   const to   = Math.min(currentPage * perPage, total)
 
-  const btnBase     = 'min-w-[32px] h-8 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-semibold transition border'
-  const btnActive   = `${btnBase} bg-blue-600 border-blue-500 text-white shadow shadow-blue-900/40`
-  const btnNormal   = `${btnBase} bg-white/4 border-gray-700 text-gray-400 hover:bg-white/8 hover:text-gray-200`
-  const btnDisabled = `${btnBase} bg-transparent border-gray-800 text-gray-700 cursor-not-allowed`
+  const btnBase = {
+    minWidth: 32, height: 32, padding: '0 8px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+    borderRadius: 8, fontSize: 12, fontWeight: 600,
+    border: `1px solid ${theme.border}`, cursor: 'pointer', transition: 'all 0.15s',
+  }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 gap-3">
-      <span className="text-xs text-gray-500 text-center sm:text-left">
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, flexWrap: 'wrap', gap: 10 }}>
+      <span style={{ fontSize: 12, color: theme.textMuted }}>
         Menampilkan{' '}
-        <span className="text-gray-200 font-semibold">{from}–{to}</span>{' '}
-        dari <span className="text-gray-200 font-semibold">{total}</span> aset
+        <span style={{ color: theme.text, fontWeight: 600 }}>{from}–{to}</span>{' '}
+        dari <span style={{ color: theme.text, fontWeight: 600 }}>{total}</span> aset
       </span>
-
       {lastPage > 1 && (
-        <div className="flex items-center justify-center gap-1 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className={currentPage <= 1 ? btnDisabled : btnNormal}
-          >
-            <ChevronLeft size={13} />
-            <span className="hidden sm:inline">Prev</span>
-          </button>
+            style={{ ...btnBase, background: theme.surface, color: currentPage <= 1 ? theme.textDim : theme.textMuted, cursor: currentPage <= 1 ? 'not-allowed' : 'pointer' }}
+          ><ChevronLeft size={13} /></button>
 
           {getPages().map((p, i) =>
             p === '...'
-              ? <span key={`d${i}`} className="px-1 text-gray-600 text-xs select-none">···</span>
-              : <button key={p} onClick={() => onPageChange(p)} className={p === currentPage ? btnActive : btnNormal}>{p}</button>
+              ? <span key={`d${i}`} style={{ padding: '0 4px', color: theme.textDim, fontSize: 12 }}>···</span>
+              : <button key={p} onClick={() => onPageChange(p)} style={{
+                  ...btnBase,
+                  background: p === currentPage ? theme.accent : theme.surface,
+                  color:      p === currentPage ? '#fff'        : theme.textMuted,
+                  borderColor:p === currentPage ? theme.accent  : theme.border,
+                }}>{p}</button>
           )}
 
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= lastPage}
-            className={currentPage >= lastPage ? btnDisabled : btnNormal}
-          >
-            <span className="hidden sm:inline">Next</span>
-            <ChevronRight size={13} />
-          </button>
+            style={{ ...btnBase, background: theme.surface, color: currentPage >= lastPage ? theme.textDim : theme.textMuted, cursor: currentPage >= lastPage ? 'not-allowed' : 'pointer' }}
+          ><ChevronRight size={13} /></button>
         </div>
       )}
     </div>
@@ -339,82 +394,86 @@ const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange }) => 
 }
 
 // ─── Asset Card ───────────────────────────────────────────────
-const AssetCard = ({ asset, onEdit, onDelete }) => {
+const AssetCard = ({ asset, onEdit, onDelete, theme }) => {
   const navigate = useNavigate()
-  const cfg      = CAT_CFG[asset.category] ?? { icon: <Package size={20} />, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' }
+  const cfg      = CAT_COLORS[asset.category] ?? CAT_COLORS.Others
+  const CatIcon  = cfg.icon
   const sCfg     = ASSET_STATUS_CFG[asset.status]
   const expired  = isExpired(asset.warranty_expiry)
   const overdue  = countOverdue(asset)
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl px-3.5 sm:px-4 py-3 sm:py-3.5 hover:border-gray-600 hover:bg-gray-800/50 transition">
-      <div className="flex items-start sm:items-center gap-3">
+    <div
+      style={{
+        background: theme.surface, border: `1px solid ${theme.border}`,
+        borderRadius: 14, padding: '12px 16px',
+        transition: 'border-color 0.15s, background 0.15s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = theme.borderAccent; e.currentTarget.style.background = theme.surfaceHover }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border;       e.currentTarget.style.background = theme.surface }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
         {/* Category icon */}
-        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
-          {cfg.icon}
+        <div style={{
+          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color,
+        }}>
+          <CatIcon size={20} />
         </div>
 
         {/* Main info */}
-        <div className="flex-1 min-w-0">
-          {/* Badges row — wraps on mobile */}
-          <div className="flex items-center gap-1.5 flex-wrap mb-1">
-            <span className="font-mono text-[10px] text-gray-500 whitespace-nowrap">{asset.asset_number}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+            <span style={{ fontFamily: 'monospace', fontSize: 10, color: theme.textMuted }}>{asset.asset_number}</span>
             <Badge label={asset.status} cfg={sCfg} />
-            <span className="bg-white/5 border border-gray-700 text-gray-400 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap hidden xs:inline-flex">
-              {asset.category}
-            </span>
+            <span style={{
+              background: theme.surfaceAlt, border: `1px solid ${theme.border}`,
+              color: theme.textMuted, fontSize: 10, padding: '1px 8px', borderRadius: 99,
+            }}>{asset.category}</span>
             {overdue > 0 && (
-              <span className="inline-flex items-center gap-1 bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
-                <Bell size={9} /> PM {overdue}
-              </span>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.28)',
+                color: theme.danger, fontSize: 10, padding: '1px 8px', borderRadius: 99, fontWeight: 600,
+              }}><Bell size={9} /> PM {overdue}</span>
             )}
           </div>
-          <p className="text-gray-100 font-semibold text-sm truncate">{asset.name}</p>
-          <p className="text-gray-500 text-[11px] mt-0.5 truncate">
-            S/N: {asset.serial_number}
-            <span className="hidden sm:inline"> · {asset.brand} {asset.model}</span>
+          <p style={{ color: theme.text, fontWeight: 600, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {asset.name}
           </p>
-
-          {/* Meta info (location/user/warranty) — shown inline below name on mobile */}
-          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 sm:hidden">
-            {[
-              [Globe,  asset.location,              false],
-              [User,   asset.user || 'Unassigned',  false],
-              [Shield, asset.warranty_expiry || '—', expired],
-            ].map(([Ic, val, warn], i) => (
-              <span key={i} className={`flex items-center gap-1 text-[10px] ${warn ? 'text-red-400' : 'text-gray-500'}`}>
-                <Ic size={9} /> {val}
-              </span>
-            ))}
-          </div>
+          <p style={{ color: theme.textMuted, fontSize: 11, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            S/N: {asset.serial_number} · {asset.brand} {asset.model}
+          </p>
         </div>
 
-        {/* Meta: location / user / warranty — desktop only */}
-        <div className="hidden md:flex flex-col gap-1.5 text-right shrink-0">
+        {/* Meta: location / user / warranty */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, textAlign: 'right', flexShrink: 0 }}>
           {[
-            [Globe,  asset.location,              false],
-            [User,   asset.user || 'Unassigned',  false],
+            [Globe,  asset.location,               false],
+            [User,   asset.user || 'Unassigned',   false],
             [Shield, asset.warranty_expiry || '—', expired],
           ].map(([Ic, val, warn], i) => (
-            <div key={i} className={`flex items-center justify-end gap-1.5 text-[11px] ${warn ? 'text-red-400' : 'text-gray-500'}`}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, fontSize: 11, color: warn ? theme.danger : theme.textMuted }}>
               <Ic size={10} /> {val}
             </div>
           ))}
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1.5 ml-1 shrink-0 self-start sm:self-center">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <button
             onClick={() => navigate(`/assets/${asset.id}`)}
             title="Lihat Detail"
-            className="w-[30px] h-[30px] flex items-center justify-center rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 hover:bg-blue-500/25 transition"
-          >
-            <Eye size={13} />
-          </button>
-          <MoreDropdown asset={asset} onEdit={onEdit} onDelete={onDelete} />
+            style={{
+              width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 8, background: 'rgba(59,139,255,0.12)', border: '1px solid rgba(59,139,255,0.28)',
+              color: theme.accent, cursor: 'pointer',
+            }}
+          ><Eye size={13} /></button>
+          <MoreDropdown asset={asset} onEdit={onEdit} onDelete={onDelete} theme={theme} />
         </div>
-
       </div>
     </div>
   )
@@ -422,7 +481,9 @@ const AssetCard = ({ asset, onEdit, onDelete }) => {
 
 // ─── Main Page ────────────────────────────────────────────────
 const AssetsPage = () => {
-  const { authFetch } = useAuth()
+  const { authFetch }  = useAuth()
+  const { T: theme }   = useTheme()
+
   const [assets,      setAssets]      = useState([])
   const [loading,     setLoading]     = useState(true)
   const [showAdd,     setShowAdd]     = useState(false)
@@ -473,15 +534,17 @@ const AssetsPage = () => {
   const paginated = results.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE)
 
   if (loading) return (
-    <div className="flex flex-col gap-3 sm:gap-4 animate-pulse px-0">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {Array(5).fill(0).map((_, i) => (
-        <div key={i} className="h-16 bg-gray-800 rounded-xl" />
+        <div key={i} style={{ height: 64, background: theme.surfaceAlt, borderRadius: 14, animation: 'pulse 1.5s ease-in-out infinite' }} />
       ))}
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
     </div>
   )
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
 
       {/* Modals */}
       {(showAdd || editAsset) && (
@@ -489,6 +552,7 @@ const AssetsPage = () => {
           editAsset={editAsset}
           onClose={() => { setShowAdd(false); setEditAsset(null) }}
           onSaved={handleSaved}
+          theme={theme}
         />
       )}
       {deleteAsset && (
@@ -497,6 +561,7 @@ const AssetsPage = () => {
           onClose={() => setDeleteAsset(null)}
           onConfirm={handleDelete}
           deleting={deleting}
+          theme={theme}
         />
       )}
 
@@ -505,33 +570,31 @@ const AssetsPage = () => {
         title="Asset Management"
         subtitle={`${assets.length} aset terdaftar`}
         action={
-          <PrimaryButton icon={Plus} onClick={() => setShowAdd(true)}>
-            <span className="hidden xs:inline">Tambah Aset</span>
-            <span className="xs:hidden">Tambah</span>
-          </PrimaryButton>
+          <PrimaryButton icon={Plus} onClick={() => setShowAdd(true)}>Tambah Aset</PrimaryButton>
         }
       />
 
-      {/* Stat cards: 2 col on mobile, 3 on sm, 5 on lg */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
-        <StatCard label="Total Aset"      value={assets.length}                                            icon={Package}       iconColor="#3B8BFF" />
-        <StatCard label="Active"          value={assets.filter(a => a.status === 'Active').length}        icon={CheckCircle2}  iconColor="#10B981" />
-        <StatCard label="Maintenance"     value={assets.filter(a => a.status === 'Maintenance').length}   icon={Wrench}        iconColor="#F59E0B" />
-        <StatCard label="Garansi Expired" value={assets.filter(a => isExpired(a.warranty_expiry)).length} icon={AlertTriangle} iconColor="#EF4444" />
-        <StatCard label="PM Terlambat"    value={totalOverdue}                                             icon={CalendarClock} iconColor="#EF4444" />
+      {/* Stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+        <StatCard label="Total Aset"      value={assets.length}                                            icon={Package}       iconColor="#3B8BFF" theme={theme} />
+        <StatCard label="Active"          value={assets.filter(a => a.status === 'Active').length}        icon={CheckCircle2}  iconColor="#10B981" theme={theme} />
+        <StatCard label="Maintenance"     value={assets.filter(a => a.status === 'Maintenance').length}   icon={Wrench}        iconColor="#F59E0B" theme={theme} />
+        <StatCard label="Garansi Expired" value={assets.filter(a => isExpired(a.warranty_expiry)).length} icon={AlertTriangle} iconColor="#EF4444" theme={theme} />
+        <StatCard label="PM Terlambat"    value={totalOverdue}                                             icon={CalendarClock} iconColor="#EF4444" theme={theme} />
       </div>
 
       {/* Search */}
       <SearchBar value={query} onChange={setQuery} placeholder="Cari nama, serial number, brand..." />
 
       {/* Asset list */}
-      <div className="flex flex-col gap-2 sm:gap-2.5">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {paginated.map(a => (
           <AssetCard
             key={a.id}
             asset={a}
             onEdit={asset => setEditAsset(asset)}
             onDelete={asset => setDeleteAsset(asset)}
+            theme={theme}
           />
         ))}
         {results.length === 0 && <EmptyState icon={Package} message="Tidak ada aset ditemukan" />}
@@ -541,13 +604,10 @@ const AssetsPage = () => {
           lastPage={lastPage}
           total={results.length}
           perPage={PER_PAGE}
-          onPageChange={(page) => {
-            setCurrentPage(page)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-          }}
+          onPageChange={(page) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+          theme={theme}
         />
       </div>
-
     </div>
   )
 }

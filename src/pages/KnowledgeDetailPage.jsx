@@ -6,111 +6,59 @@ import {
   AlertTriangle, X, Save,
 } from 'lucide-react'
 import { useAuth } from '../context/AppContext'
+import { useTheme } from '../context/ThemeContext'
 
-// ─── Constants ────────────────────────────────────────────────
-const CAT_COLOR = {
-  Network:  { text: 'text-cyan-400',    bg: 'bg-cyan-400/10',    border: 'border-cyan-400/25'    },
-  Email:    { text: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'border-violet-400/25'  },
-  Printer:  { text: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'border-amber-400/25'   },
-  Software: { text: 'text-blue-400',    bg: 'bg-blue-400/10',    border: 'border-blue-400/25'    },
-  Hardware: { text: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/25' },
+const CAT_COLORS = {
+  Network:  { color: '#22D3EE', bg: 'rgba(34,211,238,0.10)',  border: 'rgba(34,211,238,0.22)'  },
+  Email:    { color: '#A78BFA', bg: 'rgba(167,139,250,0.10)', border: 'rgba(167,139,250,0.22)' },
+  Printer:  { color: '#FBBF24', bg: 'rgba(251,191,36,0.10)',  border: 'rgba(251,191,36,0.22)'  },
+  Software: { color: '#60A5FA', bg: 'rgba(96,165,250,0.10)',  border: 'rgba(96,165,250,0.22)'  },
+  Hardware: { color: '#34D399', bg: 'rgba(52,211,153,0.10)',  border: 'rgba(52,211,153,0.22)'  },
 }
-const CAT_ICON = {
-  Network:  <Wifi size={12} />,
-  Email:    <Mail size={12} />,
-  Printer:  <Printer size={12} />,
-  Software: <Layers size={12} />,
-  Hardware: <Cpu size={12} />,
-}
+const CAT_ICON = { Network: Wifi, Email: Mail, Printer, Software: Layers, Hardware: Cpu }
 const CATEGORIES = ['Network', 'Email', 'Printer', 'Software', 'Hardware']
 
-const getCat    = (c) => CAT_COLOR[c] ?? { text: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/25' }
+const getCat    = (c) => CAT_COLORS[c] ?? { color: '#60A5FA', bg: 'rgba(96,165,250,0.10)', border: 'rgba(96,165,250,0.22)' }
 const getAuthor = (a) => typeof a?.author === 'object' ? a?.author?.name : a?.author
 
-// ─── Helpers ─────────────────────────────────────────────────
-const inputCls = 'w-full bg-white/5 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition'
+const makeInput = (theme) => ({ width: '100%', background: theme.surfaceAlt, border: `1px solid ${theme.border}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: theme.text, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', transition: 'border-color 0.2s' })
+const makeLbl   = (theme) => ({ display: 'block', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: theme.textMuted, marginBottom: 6 })
 
 // ─── StarRating ───────────────────────────────────────────────
 const StarRating = ({ value = 0, onChange, readonly = false, size = 16 }) => (
-  <div className="flex items-center gap-1">
-    {[1, 2, 3, 4, 5].map((i) => (
-      <button key={i} type="button" disabled={readonly}
-        onClick={() => onChange?.(i)}
-        className={`transition ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-125'}`}>
-        <Star
-          size={size}
-          className={i <= Math.round(value) ? 'text-amber-400' : 'text-gray-600'}
-          fill={i <= Math.round(value) ? 'currentColor' : 'none'}
-        />
+  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+    {[1,2,3,4,5].map(i => (
+      <button key={i} type="button" disabled={readonly} onClick={() => onChange?.(i)}
+        style={{ background: 'none', border: 'none', padding: 0, cursor: readonly ? 'default' : 'pointer' }}>
+        <Star size={size} color={i <= Math.round(value) ? '#FBBF24' : '#4B5563'} fill={i <= Math.round(value) ? '#FBBF24' : 'none'} />
       </button>
     ))}
-    <span className="text-gray-400 text-sm ml-1 font-semibold">{Number(value).toFixed(1)}</span>
+    <span style={{ color: '#9CA3AF', fontSize: 13, marginLeft: 4, fontWeight: 600 }}>{Number(value).toFixed(1)}</span>
   </div>
 )
 
 // ─── EditModal ────────────────────────────────────────────────
-const EditModal = ({ article, onClose, onSave, loading }) => {
-  const [form, setForm] = useState({
-    title:    article?.title    ?? '',
-    category: article?.category ?? 'Network',
-    content:  article?.content  ?? '',
-    tags:     Array.isArray(article?.tags) ? article.tags.join(', ') : (article?.tags ?? ''),
-  })
+const EditModal = ({ article, onClose, onSave, loading, theme }) => {
+  const [form, setForm] = useState({ title: article?.title ?? '', category: article?.category ?? 'Network', content: article?.content ?? '', tags: Array.isArray(article?.tags) ? article.tags.join(', ') : (article?.tags ?? '') })
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
-
+  const inp = makeInput(theme); const lbl = makeLbl(theme)
   return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center z-[1000] p-3 sm:p-5 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div
-        className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg my-4 sm:my-0 flex flex-col shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-gray-800">
-          <p className="text-gray-100 font-bold text-base">Edit Artikel</p>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition">
-            <X size={16} />
-          </button>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: theme.overlay, backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 12, overflowY: 'auto' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 18, width: '100%', maxWidth: 520, margin: '16px 0', boxShadow: '0 25px 60px rgba(0,0,0,0.35)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${theme.border}` }}>
+          <p style={{ color: theme.text, fontWeight: 700, fontSize: 15, margin: 0 }}>Edit Artikel</p>
+          <button onClick={onClose} style={{ color: theme.textMuted, background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
         </div>
-
-        <div className="flex flex-col gap-3.5 sm:gap-4 px-4 sm:px-5 py-4 overflow-y-auto max-h-[65vh]">
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Judul</label>
-            <input className={inputCls} value={form.title} onChange={set('title')} placeholder="Judul artikel..." />
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Kategori</label>
-            <select className={inputCls} value={form.category} onChange={set('category')}>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">Konten</label>
-            <textarea className={`${inputCls} min-h-[140px] sm:min-h-[160px] resize-y`} value={form.content}
-              onChange={set('content')} placeholder="Isi artikel..." />
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-1.5">
-              Tags <span className="normal-case font-normal">(pisah dengan koma)</span>
-            </label>
-            <input className={inputCls} value={form.tags} onChange={set('tags')} placeholder="vpn, network, setup" />
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px', overflowY: 'auto', maxHeight: '65vh' }}>
+          <div><label style={lbl}>Judul</label><input style={inp} value={form.title} onChange={set('title')} placeholder="Judul artikel..." /></div>
+          <div><label style={lbl}>Kategori</label><select style={inp} value={form.category} onChange={set('category')}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
+          <div><label style={lbl}>Konten</label><textarea style={{ ...inp, minHeight: 140, resize: 'vertical' }} value={form.content} onChange={set('content')} placeholder="Isi artikel..." /></div>
+          <div><label style={lbl}>Tags <span style={{ textTransform: 'none', fontWeight: 400, letterSpacing: 0 }}>(pisah dengan koma)</span></label><input style={inp} value={form.tags} onChange={set('tags')} placeholder="vpn, network, setup" /></div>
         </div>
-
-        {/* Footer: stacked on mobile, row on sm+ */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-4 sm:px-5 py-3.5 border-t border-gray-800">
-          <button onClick={onClose} disabled={loading}
-            className="px-4 py-2.5 sm:py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition text-center">
-            Batal
-          </button>
-          <button
-            disabled={loading || !form.title.trim()}
-            onClick={() => onSave(article?.id ?? null, {
-              ...form,
-              tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-            })}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 20px', borderTop: `1px solid ${theme.border}` }}>
+          <button onClick={onClose} disabled={loading} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: 13, cursor: 'pointer' }}>Batal</button>
+          <button disabled={loading || !form.title.trim()} onClick={() => onSave(article?.id ?? null, { ...form, tags: form.tags.split(',').map(t => t.trim()).filter(Boolean) })}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: theme.accent, color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
             <Save size={13} /> {loading ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
@@ -120,29 +68,17 @@ const EditModal = ({ article, onClose, onSave, loading }) => {
 }
 
 // ─── DeleteModal ──────────────────────────────────────────────
-const DeleteModal = ({ article, onClose, onConfirm, loading }) => (
-  <div
-    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 sm:p-5"
-    onClick={onClose}
-  >
-    <div
-      className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-5 sm:p-6 text-center shadow-2xl"
-      onClick={e => e.stopPropagation()}
-    >
-      <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
-        <Trash2 size={20} className="text-red-400" />
+const DeleteModal = ({ article, onClose, onConfirm, loading, theme }) => (
+  <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: theme.overlay, backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 18, width: '100%', maxWidth: 380, padding: '24px 20px', textAlign: 'center', boxShadow: '0 25px 60px rgba(0,0,0,0.35)' }}>
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <Trash2 size={20} color={theme.danger} />
       </div>
-      <p className="text-gray-100 font-bold text-base mb-2">Hapus Artikel?</p>
-      <p className="text-gray-400 text-sm mb-5 leading-relaxed">
-        <strong className="text-gray-200">{article.title}</strong> akan dihapus secara permanen.
-      </p>
-      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-center">
-        <button onClick={onClose} disabled={loading}
-          className="px-4 py-2.5 sm:py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
-          Batal
-        </button>
-        <button onClick={() => onConfirm(article.id)} disabled={loading}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition">
+      <p style={{ color: theme.text, fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Hapus Artikel?</p>
+      <p style={{ color: theme.textMuted, fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}><strong style={{ color: theme.text }}>{article.title}</strong> akan dihapus secara permanen.</p>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <button onClick={onClose} disabled={loading} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: 13, cursor: 'pointer' }}>Batal</button>
+        <button onClick={() => onConfirm(article.id)} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#DC2626', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
           <Trash2 size={12} /> {loading ? 'Menghapus...' : 'Ya, Hapus'}
         </button>
       </div>
@@ -152,8 +88,7 @@ const DeleteModal = ({ article, onClose, onConfirm, loading }) => (
 
 // ─── Toast ────────────────────────────────────────────────────
 const Toast = ({ message, type = 'success' }) => (
-  <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[2000] px-4 py-2.5 rounded-xl text-white text-sm font-medium shadow-2xl max-w-[calc(100vw-2rem)]
-    ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+  <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 2000, padding: '10px 16px', borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 500, boxShadow: '0 10px 30px rgba(0,0,0,0.3)', background: type === 'success' ? '#059669' : '#DC2626' }}>
     {message}
   </div>
 )
@@ -163,6 +98,7 @@ const KnowledgeDetailPage = () => {
   const { id }        = useParams()
   const navigate      = useNavigate()
   const { authFetch } = useAuth()
+  const { T: theme }  = useTheme()
 
   const [article,       setArticle]       = useState(null)
   const [loading,       setLoading]       = useState(true)
@@ -172,23 +108,15 @@ const KnowledgeDetailPage = () => {
   const [showDelete,    setShowDelete]    = useState(false)
   const [toast,         setToast]         = useState(null)
 
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3000)
-  }
+  const showToast = (message, type = 'success') => { setToast({ message, type }); setTimeout(() => setToast(null), 3000) }
 
   const fetchArticle = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const res = await authFetch(`/api/knowledge/${id}`)
-      if (!res.ok) throw new Error('Artikel tidak ditemukan.')
-      const data = await res.json()
-      setArticle(data.data ?? data)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+      const res = await authFetch(`/api/knowledge/${id}`); if (!res.ok) throw new Error('Artikel tidak ditemukan.')
+      const data = await res.json(); setArticle(data.data ?? data)
+    } catch (e) { setError(e.message) }
+    finally { setLoading(false) }
   }, [id, authFetch])
 
   useEffect(() => { fetchArticle() }, [fetchArticle])
@@ -196,159 +124,98 @@ const KnowledgeDetailPage = () => {
   const handleSave = async (_, form) => {
     setActionLoading(true)
     try {
-      const res = await authFetch(`/api/knowledge/${id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
-      })
+      const res = await authFetch(`/api/knowledge/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       if (!res.ok) throw new Error('Gagal menyimpan')
-      setArticle(a => ({ ...a, ...form }))
-      setShowEdit(false)
-      showToast('Artikel berhasil diperbarui ✓')
-    } catch (err) {
-      showToast(err.message, 'error')
-    } finally {
-      setActionLoading(false)
-    }
+      setArticle(a => ({ ...a, ...form })); setShowEdit(false); showToast('Artikel berhasil diperbarui ✓')
+    } catch (err) { showToast(err.message, 'error') }
+    finally { setActionLoading(false) }
   }
 
   const handleDelete = async (articleId) => {
     setActionLoading(true)
     try {
-      const res = await authFetch(`/api/knowledge/${articleId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Gagal menghapus')
+      const res = await authFetch(`/api/knowledge/${articleId}`, { method: 'DELETE' }); if (!res.ok) throw new Error()
       navigate('/knowledge')
-    } catch (err) {
-      showToast(err.message, 'error')
-      setActionLoading(false)
-    }
+    } catch (err) { showToast(err.message, 'error'); setActionLoading(false) }
   }
 
   const handleRate = async (val) => {
     setArticle(a => ({ ...a, rating: val }))
-    try {
-      await authFetch(`/api/knowledge/${id}/rate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating: val }),
-      })
-    } catch {
-      showToast('Gagal menyimpan rating', 'error')
-    }
+    try { await authFetch(`/api/knowledge/${id}/rate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating: val }) }) }
+    catch { showToast('Gagal menyimpan rating', 'error') }
   }
 
-  // ── Loading ──
   if (loading) return (
-    <div className="flex flex-col gap-4 sm:gap-5 animate-pulse px-0">
-      <div className="h-8 w-48 bg-gray-800 rounded-lg" />
-      <div className="h-32 bg-gray-800 rounded-2xl" />
-      <div className="h-64 bg-gray-800 rounded-2xl" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {[48, 128, 256].map(h => <div key={h} style={{ height: h, background: theme.surfaceAlt, borderRadius: 16, animation: 'pulse 1.5s ease-in-out infinite' }} />)}
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
     </div>
   )
 
-  // ── Error ──
   if (error) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-3 px-4">
-      <AlertTriangle size={40} className="text-red-500" />
-      <p className="text-red-400 text-sm text-center">{error}</p>
-      <button onClick={() => navigate('/knowledge')}
-        className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
-        ← Kembali ke Knowledge Base
-      </button>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12 }}>
+      <AlertTriangle size={40} color={theme.danger} />
+      <p style={{ color: theme.danger, fontSize: 13, textAlign: 'center' }}>{error}</p>
+      <button onClick={() => navigate('/knowledge')} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: 13, cursor: 'pointer' }}>← Kembali ke Knowledge Base</button>
     </div>
   )
 
-  const a    = article
-  const cat  = getCat(a.category)
+  const a = article; const cat = getCat(a.category); const CatIcon = CAT_ICON[a.category] ?? Layers
   const tags = Array.isArray(a.tags) ? a.tags : []
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
 
-      {/* Modals */}
-      {showEdit && (
-        <EditModal article={a} onClose={() => !actionLoading && setShowEdit(false)}
-          onSave={handleSave} loading={actionLoading} />
-      )}
-      {showDelete && (
-        <DeleteModal article={a} onClose={() => !actionLoading && setShowDelete(false)}
-          onConfirm={handleDelete} loading={actionLoading} />
-      )}
+      {showEdit   && <EditModal   article={a} onClose={() => !actionLoading && setShowEdit(false)}   onSave={handleSave}   loading={actionLoading} theme={theme} />}
+      {showDelete && <DeleteModal article={a} onClose={() => !actionLoading && setShowDelete(false)} onConfirm={handleDelete} loading={actionLoading} theme={theme} />}
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-        <button onClick={() => navigate('/knowledge')}
-          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 transition bg-transparent border-none cursor-pointer shrink-0">
-          <ArrowLeft size={15} /> Knowledge Base
-        </button>
-        <span className="text-gray-700">/</span>
-        <span className="text-gray-400 text-sm truncate max-w-[120px] sm:max-w-[240px]">{a.title}</span>
-
-        {/* Action buttons — right side */}
-        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <button onClick={fetchArticle}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-gray-700 text-gray-400 hover:bg-white/10 transition">
-            <RefreshCw size={13} />
-          </button>
-          <button onClick={() => setShowEdit(true)}
-            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:bg-white/5 transition">
-            <Edit2 size={13} />
-            <span className="hidden sm:inline">Edit</span>
-          </button>
-          <button onClick={() => setShowDelete(true)}
-            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-red-800/60 text-red-400 text-sm hover:bg-red-500/10 transition">
-            <Trash2 size={13} />
-            <span className="hidden sm:inline">Hapus</span>
-          </button>
+      {/* Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <button onClick={() => navigate('/knowledge')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: theme.textMuted, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}><ArrowLeft size={15} /> Knowledge Base</button>
+        <span style={{ color: theme.textDim }}>/</span>
+        <span style={{ color: theme.textMuted, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240 }}>{a.title}</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button onClick={fetchArticle} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: theme.surfaceAlt, border: `1px solid ${theme.border}`, color: theme.textMuted, cursor: 'pointer' }}><RefreshCw size={13} /></button>
+          <button onClick={() => setShowEdit(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: 13, cursor: 'pointer' }}><Edit2 size={13} /> Edit</button>
+          <button onClick={() => setShowDelete(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.35)', background: 'transparent', color: theme.danger, fontSize: 13, cursor: 'pointer' }}><Trash2 size={13} /> Hapus</button>
         </div>
       </div>
 
-      {/* ── Hero card ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-4 sm:px-6 py-4 sm:py-5">
-        {/* Category badge */}
-        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full border mb-3 ${cat.text} ${cat.bg} ${cat.border}`}>
-          {CAT_ICON[a.category]} {a.category ?? 'General'}
+      {/* Hero */}
+      <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 16, padding: '20px 24px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, padding: '3px 12px', borderRadius: 99, border: `1px solid ${cat.border}`, background: cat.bg, color: cat.color, marginBottom: 12 }}>
+          <CatIcon size={11} /> {a.category ?? 'General'}
         </span>
-
-        <h1 className="text-gray-100 font-bold text-lg sm:text-xl leading-snug mb-3">{a.title}</h1>
-
-        {/* Meta — wraps naturally on mobile */}
-        <div className="flex items-center gap-3 sm:gap-4 flex-wrap mb-4">
+        <h1 style={{ color: theme.text, fontWeight: 700, fontSize: 20, lineHeight: 1.3, marginBottom: 12 }}>{a.title}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
           {[[User, getAuthor(a) ?? 'Unknown'], [CalendarDays, a.date ?? '—'], [Eye, `${a.views ?? 0} views`]].map(([Ic, v], i) => (
-            <span key={i} className="flex items-center gap-1.5 text-gray-500 text-xs">
-              <Ic size={11} /> {v}
-            </span>
+            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, color: theme.textMuted, fontSize: 12 }}><Ic size={11} /> {v}</span>
           ))}
         </div>
-
-        {/* Star rating */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Rating:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: tags.length > 0 ? 16 : 0 }}>
+          <span style={{ fontSize: 12, color: theme.textMuted }}>Rating:</span>
           <StarRating value={a.rating ?? 0} onChange={handleRate} size={15} />
         </div>
-
-        {/* Tags */}
         {tags.length > 0 && (
-          <div className="flex gap-1.5 sm:gap-2 flex-wrap items-start mt-4 pt-4 border-t border-gray-800">
-            <Tag size={11} className="text-gray-600 mt-0.5 shrink-0" />
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', paddingTop: 16, borderTop: `1px solid ${theme.border}` }}>
+            <Tag size={11} color={theme.textDim} />
             {tags.map((t, i) => (
-              <span key={i} className="text-[10px] text-gray-500 bg-white/4 border border-gray-700 px-2.5 py-0.5 rounded-full">
-                #{t}
-              </span>
+              <span key={i} style={{ fontSize: 10, color: theme.textMuted, background: theme.surfaceAlt, border: `1px solid ${theme.border}`, padding: '2px 10px', borderRadius: 99 }}>#{t}</span>
             ))}
           </div>
         )}
       </div>
 
-      {/* ── Content card ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl px-4 sm:px-6 py-4 sm:py-5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-4">Konten</p>
-        {a.content ? (
-          <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{a.content}</p>
-        ) : (
-          <p className="text-gray-600 text-sm italic">Konten artikel tidak tersedia.</p>
-        )}
+      {/* Content */}
+      <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 16, padding: '20px 24px' }}>
+        <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: theme.textMuted, marginBottom: 16 }}>Konten</p>
+        {a.content
+          ? <p style={{ color: theme.textSub, fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-words', margin: 0 }}>{a.content}</p>
+          : <p style={{ color: theme.textDim, fontSize: 13, fontStyle: 'italic' }}>Konten artikel tidak tersedia.</p>
+        }
       </div>
-
     </div>
   )
 }
