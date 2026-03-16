@@ -1,18 +1,23 @@
+
 const Badge = ({ label, cfg, dot = false, pulse = false }) => (
-  <span style={{
-    background: cfg.bg, color: cfg.text, border: `1px solid ${cfg.border}`,
-    display: 'inline-flex', alignItems: 'center', gap: 5,
-    padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-    letterSpacing: '0.02em', whiteSpace: 'nowrap', userSelect: 'none',
-  }}>
+  <span
+    className="inline-flex items-center gap-[5px] px-[9px] py-[2px] rounded-full text-[11px] font-semibold tracking-[0.02em] whitespace-nowrap select-none"
+    style={{
+      background: cfg.bg,
+      color: cfg.text,
+      border: `1px solid ${cfg.border}`,
+    }}
+  >
     {dot && (
-      <span style={{
-        width: 5, height: 5, borderRadius: '50%', background: cfg.dot ?? cfg.text,
-        display: 'inline-block',
-        animation: pulse ? 'itsPulse 1.4s ease-in-out infinite' : 'none',
-      }} />
+      <span
+        className={`w-[5px] h-[5px] rounded-full inline-block ${pulse ? 'animate-pulse' : ''}`}
+        style={{
+          background: cfg.dot ?? cfg.text,
+        }}
+      />
     )}
     {label}
   </span>
 )
+
 export default Badge

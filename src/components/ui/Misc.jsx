@@ -1,50 +1,161 @@
+
 import { T } from '../../theme'
 
 export const PageHeader = ({ title, subtitle, action }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+  <div className="flex items-center justify-between mb-[22px]">
     <div>
-      <h1 style={{ color: T.text, fontWeight: 800, fontSize: 22 }}>{title}</h1>
-      {subtitle && <p style={{ color: T.textMuted, fontSize: 13, marginTop: 4 }}>{subtitle}</p>}
+      <h1
+        className="text-[22px] font-extrabold"
+        style={{ color: T.text }}
+      >
+        {title}
+      </h1>
+
+      {subtitle && (
+        <p
+          className="text-[13px] mt-1"
+          style={{ color: T.textMuted }}
+        >
+          {subtitle}
+        </p>
+      )}
     </div>
+
     {action}
   </div>
 )
 
+
 export const SectionHeader = ({ title, action, actionLabel = 'Lihat Semua' }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-    <h3 style={{ color: T.text, fontSize: 14, fontWeight: 700 }}>{title}</h3>
-    {action && <button onClick={action} style={{ color: T.accent, fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>{actionLabel} →</button>}
+  <div className="flex items-center justify-between mb-4">
+
+    <h3
+      className="text-[14px] font-bold"
+      style={{ color: T.text }}
+    >
+      {title}
+    </h3>
+
+    {action && (
+      <button
+        onClick={action}
+        className="text-[12px] font-medium cursor-pointer"
+        style={{
+          color: T.accent,
+          background: 'none',
+          border: 'none'
+        }}
+      >
+        {actionLabel} →
+      </button>
+    )}
+
   </div>
 )
 
+
 export const FilterTabs = ({ tabs, active, onChange }) => (
-  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+  <div className="flex gap-[6px] flex-wrap">
+
     {tabs.map(tab => (
-      <button key={tab} onClick={() => onChange(tab)} style={{ padding: '5px 13px', borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.18s', border: active === tab ? 'none' : `1px solid ${T.border}`, background: active === tab ? T.accent : 'rgba(255,255,255,0.04)', color: active === tab ? '#fff' : T.textMuted }}>
+      <button
+        key={tab}
+        onClick={() => onChange(tab)}
+        className="px-[13px] py-[5px] rounded-full text-[11px] font-semibold transition-all cursor-pointer"
+        style={{
+          border: active === tab ? 'none' : `1px solid ${T.border}`,
+          background: active === tab ? T.accent : 'rgba(255,255,255,0.04)',
+          color: active === tab ? '#fff' : T.textMuted
+        }}
+      >
         {tab}
       </button>
     ))}
+
   </div>
 )
+
 
 export const StatCard = ({ label, value, change, positive, icon: Icon, iconColor }) => (
-  <div style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, position: 'relative', overflow: 'hidden' }}>
-    <div style={{ position: 'absolute', top: 0, right: 0, width: 70, height: 70, borderRadius: '0 16px 0 70px', background: `${iconColor}08`, pointerEvents: 'none' }} />
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-      <div style={{ width: 38, height: 38, borderRadius: 10, background: `${iconColor}15`, border: `1px solid ${iconColor}25`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <div
+    className="relative rounded-[16px] p-5 overflow-hidden"
+    style={{
+      background: T.surfaceAlt,
+      border: `1px solid ${T.border}`
+    }}
+  >
+
+    <div
+      className="absolute top-0 right-0 w-[70px] h-[70px]"
+      style={{
+        borderRadius: '0 16px 0 70px',
+        background: `${iconColor}08`
+      }}
+    />
+
+    <div className="flex justify-between items-start mb-[14px]">
+
+      <div
+        className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center"
+        style={{
+          background: `${iconColor}15`,
+          border: `1px solid ${iconColor}25`
+        }}
+      >
         <Icon size={16} color={iconColor} />
       </div>
-      {change != null && <span style={{ fontSize: 11, fontWeight: 600, color: positive ? T.success : T.danger }}>{positive ? '↑' : '↓'} {change}</span>}
+
+      {change != null && (
+        <span
+          className="text-[11px] font-semibold"
+          style={{ color: positive ? T.success : T.danger }}
+        >
+          {positive ? '↑' : '↓'} {change}
+        </span>
+      )}
+
     </div>
-    <div style={{ color: T.text, fontSize: 28, fontWeight: 800, lineHeight: 1 }}>{value}</div>
-    <div style={{ color: T.textMuted, fontSize: 12, marginTop: 5 }}>{label}</div>
-    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${iconColor}55,transparent)` }} />
+
+    <div
+      className="text-[28px] font-extrabold leading-none"
+      style={{ color: T.text }}
+    >
+      {value}
+    </div>
+
+    <div
+      className="text-[12px] mt-[5px]"
+      style={{ color: T.textMuted }}
+    >
+      {label}
+    </div>
+
+    <div
+      className="absolute bottom-0 left-0 right-0 h-[2px]"
+      style={{
+        background: `linear-gradient(90deg,transparent,${iconColor}55,transparent)`
+      }}
+    />
+
   </div>
 )
 
+
 export const EmptyState = ({ icon: Icon, message }) => (
-  <div style={{ padding: '52px 0', textAlign: 'center', color: T.textDim }}>
-    <Icon size={28} style={{ marginBottom: 10, opacity: .3 }} />
-    <p style={{ fontSize: 13 }}>{message}</p>
+  <div
+    className="py-[52px] text-center"
+    style={{ color: T.textDim }}
+  >
+
+    <Icon
+      size={28}
+      className="mb-[10px]"
+      style={{ opacity: 0.3 }}
+    />
+
+    <p className="text-[13px]">
+      {message}
+    </p>
+
   </div>
 )

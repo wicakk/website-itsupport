@@ -1,39 +1,134 @@
-import { T, inputStyle, labelStyle } from '../../theme'
 
-export const Input = ({ label, icon: Icon, style: ext = {}, ...props }) => (
-  <div>
-    {label && <label style={labelStyle}>{label}</label>}
-    <div style={{ position: 'relative' }}>
-      {Icon && <Icon size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: T.textDim, pointerEvents: 'none' }} />}
-      <input {...props} style={{ ...inputStyle, ...(Icon ? { paddingLeft: 36 } : {}), ...ext }}
-        onFocus={e => (e.target.style.borderColor = T.accent)} onBlur={e => (e.target.style.borderColor = T.border)} />
+import { T } from '../../theme'
+
+export const Input = ({ label, icon: Icon, className = '', style = {}, ...props }) => (
+  <div className="w-full">
+
+    {label && (
+      <label
+        className="block text-xs font-semibold mb-1"
+        style={{ color: T.textMuted }}
+      >
+        {label}
+      </label>
+    )}
+
+    <div className="relative">
+
+      {Icon && (
+        <Icon
+          size={13}
+          className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: T.textDim }}
+        />
+      )}
+
+      <input
+        {...props}
+        className={`w-full rounded-md px-3 py-2 text-sm outline-none transition-colors ${Icon ? 'pl-9' : ''} ${className}`}
+        style={{
+          background: T.input,
+          border: `1px solid ${T.border}`,
+          color: T.text,
+          ...style
+        }}
+        onFocus={e => (e.target.style.borderColor = T.accent)}
+        onBlur={e => (e.target.style.borderColor = T.border)}
+      />
+
     </div>
   </div>
 )
 
-export const Textarea = ({ label, style: ext = {}, ...props }) => (
-  <div>
-    {label && <label style={labelStyle}>{label}</label>}
-    <textarea {...props} style={{ ...inputStyle, height: 90, resize: 'none', ...ext }}
-      onFocus={e => (e.target.style.borderColor = T.accent)} onBlur={e => (e.target.style.borderColor = T.border)} />
+
+export const Textarea = ({ label, className = '', style = {}, ...props }) => (
+  <div className="w-full">
+
+    {label && (
+      <label
+        className="block text-xs font-semibold mb-1"
+        style={{ color: T.textMuted }}
+      >
+        {label}
+      </label>
+    )}
+
+    <textarea
+      {...props}
+      className={`w-full rounded-md px-3 py-2 text-sm outline-none resize-none h-[90px] transition-colors ${className}`}
+      style={{
+        background: T.input,
+        border: `1px solid ${T.border}`,
+        color: T.text,
+        ...style
+      }}
+      onFocus={e => (e.target.style.borderColor = T.accent)}
+      onBlur={e => (e.target.style.borderColor = T.border)}
+    />
+
   </div>
 )
 
-export const Select = ({ label, options, ...props }) => (
-  <div>
-    {label && <label style={labelStyle}>{label}</label>}
-    <select {...props} style={{ ...inputStyle, cursor: 'pointer' }}
-      onFocus={e => (e.target.style.borderColor = T.accent)} onBlur={e => (e.target.style.borderColor = T.border)}>
-      {options.map(o => <option key={o} value={o} style={{ background: T.surface }}>{o}</option>)}
+
+export const Select = ({ label, options = [], className = '', style = {}, ...props }) => (
+  <div className="w-full">
+
+    {label && (
+      <label
+        className="block text-xs font-semibold mb-1"
+        style={{ color: T.textMuted }}
+      >
+        {label}
+      </label>
+    )}
+
+    <select
+      {...props}
+      className={`w-full rounded-md px-3 py-2 text-sm outline-none cursor-pointer transition-colors ${className}`}
+      style={{
+        background: T.input,
+        border: `1px solid ${T.border}`,
+        color: T.text,
+        ...style
+      }}
+      onFocus={e => (e.target.style.borderColor = T.accent)}
+      onBlur={e => (e.target.style.borderColor = T.border)}
+    >
+      {options.map(o => (
+        <option key={o} value={o} style={{ background: T.surface }}>
+          {o}
+        </option>
+      ))}
     </select>
+
   </div>
 )
+
 
 export const SearchBar = ({ value, onChange, placeholder = 'Cari...', icon: Icon }) => (
-  <div style={{ position: 'relative', flex: 1 }}>
-    {Icon && <Icon size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: T.textDim, pointerEvents: 'none' }} />}
-    <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-      style={{ ...inputStyle, ...(Icon ? { paddingLeft: 36 } : {}) }}
-      onFocus={e => (e.target.style.borderColor = T.accent)} onBlur={e => (e.target.style.borderColor = T.border)} />
+  <div className="relative flex-1">
+
+    {Icon && (
+      <Icon
+        size={13}
+        className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+        style={{ color: T.textDim }}
+      />
+    )}
+
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full rounded-md px-3 py-2 text-sm outline-none transition-colors ${Icon ? 'pl-9' : ''}`}
+      style={{
+        background: T.input,
+        border: `1px solid ${T.border}`,
+        color: T.text
+      }}
+      onFocus={e => (e.target.style.borderColor = T.accent)}
+      onBlur={e => (e.target.style.borderColor = T.border)}
+    />
+
   </div>
 )

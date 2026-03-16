@@ -1,26 +1,79 @@
+
 import { X } from 'lucide-react'
 import { T } from '../../theme'
 
 const Modal = ({ title, subtitle, onClose, children, width = 640 }) => (
-  <div style={{
-    position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center',
-    justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)',
-  }}>
-    <div style={{ width: '100%', maxWidth: width, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 20, boxShadow: '0 40px 80px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
-      <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+  <div
+    className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-md"
+    style={{ background: 'rgba(0,0,0,0.72)' }}
+  >
+
+    <div
+      className="w-full rounded-[20px] overflow-hidden"
+      style={{
+        maxWidth: width,
+        background: T.surface,
+        border: `1px solid ${T.border}`,
+        boxShadow: '0 40px 80px rgba(0,0,0,0.6)'
+      }}
+    >
+
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-6 py-5"
+        style={{ borderBottom: `1px solid ${T.border}` }}
+      >
+
         <div>
-          <h2 style={{ color: T.text, fontWeight: 700, fontSize: 16 }}>{title}</h2>
-          {subtitle && <p style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>{subtitle}</p>}
+          <h2
+            className="text-[16px] font-bold"
+            style={{ color: T.text }}
+          >
+            {title}
+          </h2>
+
+          {subtitle && (
+            <p
+              className="text-[12px] mt-[2px]"
+              style={{ color: T.textMuted }}
+            >
+              {subtitle}
+            </p>
+          )}
         </div>
-        <button onClick={onClose}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.12)'; e.currentTarget.style.color = T.danger }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = T.textMuted }}
-          style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, color: T.textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+
+        <button
+          onClick={onClose}
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: `1px solid ${T.border}`,
+            color: T.textMuted
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(239,68,68,0.12)'
+            e.currentTarget.style.color = T.danger
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+            e.currentTarget.style.color = T.textMuted
+          }}
+        >
           <X size={14} />
         </button>
+
       </div>
-      <div style={{ padding: 24, maxHeight: '72vh', overflowY: 'auto' }}>{children}</div>
+
+      {/* Content */}
+      <div
+        className="p-6 max-h-[72vh] overflow-y-auto"
+      >
+        {children}
+      </div>
+
     </div>
+
   </div>
 )
+
 export default Modal
