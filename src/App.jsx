@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import { AppProvider, useAuth } from "./context/AppContext"
+import { ThemeProvider } from "./context/ThemeContext"   // ✅ import terpisah, bukan re-import AppProvider
 
 import AppLayout from "./components/layout/AppLayout"
 import LoginPage from "./pages/LoginPage"
@@ -13,9 +14,6 @@ import {
   ReportsPage,
   UsersPage,
   SettingsPage,
-  TicketDetailPage,
-  AssetDetailPage,
-  KnowledgeDetailPage,
 } from "./pages"
 
 function ProtectedRoutes() {
@@ -28,20 +26,15 @@ function ProtectedRoutes() {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/tickets" element={<TicketsPage />} />
-        <Route path="/assets" element={<AssetsPage />} />
-        <Route path="/knowledge" element={<KnowledgePage />} />
+        <Route path="/dashboard"  element={<DashboardPage />} />
+        <Route path="/tickets"    element={<TicketsPage />} />
+        <Route path="/assets"     element={<AssetsPage />} />
+        <Route path="/knowledge"  element={<KnowledgePage />} />
         <Route path="/monitoring" element={<MonitoringPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-
-        <Route path="*" element={<Navigate to="/dashboard" />} />
-
-        <Route path="/tickets/:id" element={<TicketDetailPage />} />
-        <Route path="/assets/:id" element={<AssetDetailPage />} />
-        <Route path="/knowledge/:id" element={<KnowledgeDetailPage />} />
+        <Route path="/reports"    element={<ReportsPage />} />
+        <Route path="/users"      element={<UsersPage />} />
+        <Route path="/settings"   element={<SettingsPage />} />
+        <Route path="*"           element={<Navigate to="/dashboard" />} />
       </Routes>
     </AppLayout>
   )
@@ -56,7 +49,6 @@ function Router() {
         path="/login"
         element={user ? <Navigate to="/dashboard" /> : <LoginPage />}
       />
-
       <Route path="/*" element={<ProtectedRoutes />} />
     </Routes>
   )
@@ -64,8 +56,11 @@ function Router() {
 
 export default function App() {
   return (
+    // ✅ AppProvider dulu (auth + app state), baru ThemeProvider di dalamnya
     <AppProvider>
-      <Router />
+      <ThemeProvider>
+        <Router />
+      </ThemeProvider>
     </AppProvider>
   )
 }
