@@ -1,4 +1,4 @@
-// components/layout/Topbar.jsx
+
 import { useEffect, useRef, useCallback } from 'react'
 import { Bell, Home, ChevronRight, Ticket, AlertTriangle, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { Avatar } from '../ui'
