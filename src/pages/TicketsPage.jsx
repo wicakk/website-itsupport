@@ -622,7 +622,7 @@ const TicketsPage = () => {
         </div>
 
         {/* ── Mobile cards ── */}
-        <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="flex flex-col md:hidden" style={{ minHeight: 200 }}>
           {loading
             ? Array(5).fill(0).map((_, i) => (
                 <div key={i} style={{ padding: '14px 16px', borderTop: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
