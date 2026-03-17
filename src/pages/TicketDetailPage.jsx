@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, RefreshCw, Clock, User, Layers, AlertCircle, MessageSquare, Send, CheckCircle2, UserCheck, RotateCcw, XCircle, Paperclip, UserPlus, ChevronDown, Check, Search, X } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Clock, User, Layers, AlertCircle, MessageSquare, Send, CheckCircle2, UserCheck, RotateCcw, XCircle, Paperclip, UserPlus, ChevronDown, Check, Search, X, Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AppContext'
 import { useTheme } from '../context/ThemeContext'
 import { Badge } from '../components/ui'
@@ -131,7 +131,7 @@ const TicketTitleCard = ({ ticket, theme }) => (
         {ticket.attachments.map((a, i) => (
           <a key={i} href={a.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition" style={{ color: theme.accent, background: theme.accentSoft, border: `1px solid ${theme.borderAccent}` }} onMouseEnter={(e) => e.target.style.color = theme.accentHover} onMouseLeave={(e) => e.target.style.color = theme.accent}>
             <Paperclip size={12} />
-            {a.name ?? `Lampiran ${i + 1}`}
+            {a.original_name ?? a.name ?? `Lampiran ${i + 1}`}
           </a>
         ))}
       </div>
@@ -139,8 +139,57 @@ const TicketTitleCard = ({ ticket, theme }) => (
   </div>
 )
 
+// Comment Item
+const CommentItem = ({ comment, index, theme, currentUser, onDelete, deleting }) => {
+  const displayName = comment.user?.name ?? comment.user_name ?? comment.author ?? (comment.user_id ? `User #${comment.user_id}` : 'Unknown')
+  const initials = displayName.charAt(0).toUpperCase()
+  const bodyText = comment.body ?? comment.content ?? comment.message ?? ''
+  const avatarColors = [theme.accent, theme.purple, theme.success, theme.warning, '#EC4899', theme.cyan]
+  const avatarColor = avatarColors[(comment.user_id ?? comment.id ?? index) % avatarColors.length]
+  const canDelete = currentUser && (currentUser.id === comment.user_id || currentUser.role === 'admin')
+
+  return (
+    <div className="px-5 py-3.5 flex gap-3" style={{ background: index % 2 === 0 ? theme.surface : theme.surfaceAlt }}>
+      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5" style={{ background: avatarColor }}>
+        {initials}
+      </div>
+      <div className="flex flex-col gap-1 flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 flex-wrap justify-between">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-xs font-semibold" style={{ color: theme.text }}>{displayName}</span>
+            <span className="text-[10px]" style={{ color: theme.textMuted }}>{fmt(comment.created_at)}</span>
+            {(comment.is_internal === 1 || comment.is_internal === true) && (
+              <span className="text-[10px] rounded px-1.5 py-0.5" style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.22)', color: theme.warning }}>Internal</span>
+            )}
+          </div>
+          {canDelete && (
+            <button onClick={() => onDelete(comment.id)} disabled={deleting} style={{ background: 'transparent', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.5 : 1 }} title="Hapus komentar">
+              <Trash2 size={14} style={{ color: theme.danger }} />
+            </button>
+          )}
+        </div>
+        {bodyText ? (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words" style={{ color: theme.text }}>{bodyText}</p>
+        ) : (
+          <p className="text-sm italic" style={{ color: theme.textMuted }}>— (komentar kosong)</p>
+        )}
+        {comment.attachments?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t" style={{ borderColor: theme.border }}>
+            {comment.attachments.map((a, idx) => (
+              <a key={idx} href={a.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition" style={{ color: theme.accent, background: theme.accentSoft, border: `1px solid ${theme.borderAccent}` }} onMouseEnter={(e) => e.target.style.color = theme.accentHover} onMouseLeave={(e) => e.target.style.color = theme.accent}>
+                <Paperclip size={12} />
+                {a.original_name ?? a.name ?? `File ${idx + 1}`}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Comments Section
-const CommentsSection = ({ comments, comment, onCommentChange, onCommentSubmit, submitting, theme, onFileSelect, selectedFiles }) => (
+const CommentsSection = ({ comments, comment, onCommentChange, onCommentSubmit, submitting, theme, onFileSelect, selectedFiles, currentUser, onDeleteComment, deletingCommentId }) => (
   <div className="rounded-xl overflow-hidden flex flex-col" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
     <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: theme.border }}>
       <MessageSquare size={16} style={{ color: theme.textMuted }} />
@@ -153,42 +202,17 @@ const CommentsSection = ({ comments, comment, onCommentChange, onCommentSubmit, 
       {comments.length === 0 ? (
         <p className="text-xs px-5 py-6 text-center" style={{ color: theme.textMuted }}>Belum ada komentar.</p>
       ) : (
-        comments.map((c, i) => {
-          const displayName = c.user?.name ?? c.user_name ?? c.author ?? (c.user_id ? `User #${c.user_id}` : 'Unknown')
-          const initials = displayName.charAt(0).toUpperCase()
-          const bodyText = c.body ?? c.content ?? c.message ?? ''
-          const avatarColors = [theme.accent, theme.purple, theme.success, theme.warning, '#EC4899', theme.cyan]
-          const avatarColor = avatarColors[(c.user_id ?? c.id ?? i) % avatarColors.length]
-          return (
-            <div key={c.id ?? i} className="px-5 py-3.5 flex gap-3" style={{ background: i % 2 === 0 ? theme.surface : theme.surfaceAlt }}>
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5" style={{ background: avatarColor }}>
-                {initials}
-              </div>
-              <div className="flex flex-col gap-1 flex-1 min-w-0">
-                <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="text-xs font-semibold" style={{ color: theme.text }}>{displayName}</span>
-                  <span className="text-[10px]" style={{ color: theme.textMuted }}>{fmt(c.created_at)}</span>
-                  {c.is_internal === 1 && <span className="text-[10px] rounded px-1.5 py-0.5" style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.22)', color: theme.warning }}>Internal</span>}
-                </div>
-                {bodyText ? (
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words" style={{ color: theme.text }}>{bodyText}</p>
-                ) : (
-                  <p className="text-sm italic" style={{ color: theme.textMuted }}>— (komentar kosong)</p>
-                )}
-                {c.attachments?.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t" style={{ borderColor: theme.border }}>
-                    {c.attachments.map((a, idx) => (
-                      <a key={idx} href={a.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition" style={{ color: theme.accent, background: theme.accentSoft, border: `1px solid ${theme.borderAccent}` }} onMouseEnter={(e) => e.target.style.color = theme.accentHover} onMouseLeave={(e) => e.target.style.color = theme.accent}>
-                        <Paperclip size={12} />
-                        {a.name ?? `File ${idx + 1}`}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })
+        comments.map((c, i) => (
+          <CommentItem
+            key={c.id ?? i}
+            comment={c}
+            index={i}
+            theme={theme}
+            currentUser={currentUser}
+            onDelete={onDeleteComment}
+            deleting={deletingCommentId === c.id}
+          />
+        ))
       )}
     </div>
     <div className="px-5 py-4 flex flex-col gap-3 border-t" style={{ borderColor: theme.border }}>
@@ -312,6 +336,7 @@ const TicketDetailPage = () => {
   const [agents, setAgents] = useState([])
   const [assigning, setAssigning] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState(null)
+  const [deletingCommentId, setDeletingCommentId] = useState(null)
 
   const fetchTicket = async () => {
     setLoading(true); setError(null)
@@ -351,38 +376,44 @@ const TicketDetailPage = () => {
     }
   }
 
+  // ✅ FIX: Proper FormData handling + extract comment from response
   const handleComment = async () => {
-    if (!comment.trim() && (!selectedFiles || selectedFiles.length === 0)) return
-    setSubmitting(true)
-    try {
-      const formData = new FormData()
-      formData.append('body', comment)
-      if (selectedFiles && selectedFiles.length > 0) {
-        Array.from(selectedFiles).forEach((file) => {
-          formData.append('attachments[]', file)
-        })
-      }
+  const bodyText = comment.trim()
+  if (!bodyText) return
 
-      const res = await authFetch(`/api/tickets/${id}/comments`, {
-        method: 'POST',
-        body: formData
-      })
-      if (!res.ok) throw new Error('Gagal mengirim komentar.')
-      const data = await res.json()
-      setComments(prev => [...prev, data])
-      setComment('')
-      setSelectedFiles(null)
-    } catch (e) {
-      alert(e.message)
-    } finally {
-      setSubmitting(false)
+  setSubmitting(true)
+  try {
+    const res = await authFetch(`/api/tickets/${id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body: bodyText })
+    })
+
+    if (!res.ok) {
+      const errData = await res.json()
+      throw new Error(errData.message || 'Gagal mengirim komentar.')
     }
-  }
+    await fetchTicket()
 
+    // const data = await res.json()
+
+    // // ✅ samakan dengan versi atas
+    // setComments(prev => [...prev, data])
+
+    setComment('')
+    setSelectedFiles(null)
+  } catch (e) {
+    alert(e.message)
+  } finally {
+    setSubmitting(false)
+  }
+}
+
+  // ✅ FIX: Use PUT instead of PATCH
   const handleStatusChange = async (status) => {
     try {
       const res = await authFetch(`/api/tickets/${id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       })
@@ -397,10 +428,18 @@ const TicketDetailPage = () => {
     setAssigning(true)
     try {
       if (agentId === null) {
-        const res = await authFetch(`/api/tickets/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: null }) })
+        const res = await authFetch(`/api/tickets/${id}`, { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ assigned_to: null }) 
+        })
         if (!res.ok) throw new Error('Gagal menghapus assignment.')
       } else {
-        const res = await authFetch(`/api/tickets/${id}/assign`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: agentId }) })
+        const res = await authFetch(`/api/tickets/${id}/assign`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ assigned_to: agentId })
+        })
         if (!res.ok) throw new Error('Gagal mengassign tiket.')
       }
       await fetchTicket()
@@ -408,6 +447,25 @@ const TicketDetailPage = () => {
       alert(e.message)
     } finally {
       setAssigning(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Hapus komentar ini?')) return
+    setDeletingCommentId(commentId)
+    try {
+      const res = await authFetch(`/api/tickets/${id}/comments/${commentId}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.message || 'Gagal menghapus komentar.')
+      }
+      setComments(prev => prev.filter(c => c.id !== commentId))
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setDeletingCommentId(null)
     }
   }
 
@@ -449,7 +507,19 @@ const TicketDetailPage = () => {
         {/* Left: Ticket Title + Comments (8 col) */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           <TicketTitleCard ticket={t} theme={theme} />
-          <CommentsSection comments={comments} comment={comment} onCommentChange={(e) => setComment(e.target.value)} onCommentSubmit={handleComment} submitting={submitting} theme={theme} onFileSelect={handleFileSelect} selectedFiles={selectedFiles} />
+          <CommentsSection 
+            comments={comments} 
+            comment={comment} 
+            onCommentChange={(e) => setComment(e.target.value)} 
+            onCommentSubmit={handleComment} 
+            submitting={submitting} 
+            theme={theme} 
+            onFileSelect={handleFileSelect} 
+            selectedFiles={selectedFiles}
+            currentUser={currentUser}
+            onDeleteComment={handleDeleteComment}
+            deletingCommentId={deletingCommentId}
+          />
         </div>
 
         {/* Right: Actions & Details (4 col) */}
