@@ -202,8 +202,8 @@ function UsersPage() {
         if (!token) throw new Error('Belum login')
         const headers = { Accept: 'application/json', Authorization: `Bearer ${token}` }
         const [resUsers, resTickets] = await Promise.all([
-          fetch('http://localhost:8000/api/users',   { headers }),
-          fetch('http://localhost:8000/api/tickets', { headers }),
+          fetch('/api/users',   { headers }),
+          fetch('/api/tickets', { headers }),
         ])
         if (!resUsers.ok) throw new Error('Gagal fetch users')
         const rawUsers = (await resUsers.json()).data ?? []
@@ -223,7 +223,7 @@ function UsersPage() {
     setActionLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:8000/api/users', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) })
+      const res = await fetch('/api/users', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.errors ? Object.values(data.errors).flat()[0] : data.message || 'Gagal menambahkan user')
       setUsers(p => [...p, { ...(data.user ?? data.data ?? data), tickets: 0 }])
@@ -236,7 +236,7 @@ function UsersPage() {
     setActionLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/users/${id}`, { method: 'PUT', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) })
+      const res = await fetch(`/api/users/${id}`, { method: 'PUT', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) })
       const data = await res.json(); if (!res.ok) throw new Error(data.message || 'Gagal menyimpan')
       setUsers(p => p.map(u => u.id === id ? { ...u, ...form } : u)); setEditUser(null); showToast('User berhasil diperbarui ✓')
     } catch (err) { showToast(err.message, 'error') }
@@ -247,7 +247,7 @@ function UsersPage() {
     setActionLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8000/api/users/${id}`, { method: 'DELETE', headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } })
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } })
       if (!res.ok) throw new Error('Gagal menghapus')
       setUsers(p => p.filter(u => u.id !== id)); setDeleteUser(null); showToast('User berhasil dihapus')
     } catch (err) { showToast(err.message, 'error') }
