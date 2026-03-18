@@ -6,6 +6,7 @@ export { default as MonitoringPage } from './MonitoringPage'
 export { default as ReportsPage }    from './ReportsPage'
 export { default as UsersPage }      from './UsersPage'
 export { default as SettingsPage }   from './SettingsPage'
+export { default as RolesPage }      from './RolesPage'
 
 
 // Detail Pages
