@@ -1,55 +1,37 @@
 // src/App.jsx
-import { Routes, Route, Navigate } from "react-router-dom"
-import { AppProvider, useAuth } from "./context/AppContext"
-import AppLayout from "./components/layout/AppLayout"
-import LoginPage from "./pages/LoginPage"
-import { ThemeProvider } from "./context/ThemeContext"
-import CanAccess from "./components/ui/CanAccess"
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { AppProvider, useAuth } from './context/AppContext'
+import { ThemeProvider } from './context/ThemeContext'
+import { PermissionProvider } from './context/PermissionContext'
+import AppLayout from './components/layout/AppLayout'
+import LoginPage from './pages/LoginPage'
+import CanAccess from './components/ui/CanAccess'
 import {
-  DashboardPage,
-  TicketsPage,
-  AssetsPage,
-  KnowledgePage,
-  MonitoringPage,
-  ReportsPage,
-  UsersPage,
-  SettingsPage,
-  TicketDetailPage,
-  AssetDetailPage,
-  KnowledgeDetailPage,
-} from "./pages"
-import RolesPage from "./pages/RolesPage"
+  DashboardPage, TicketsPage, AssetsPage, KnowledgePage,
+  MonitoringPage, ReportsPage, UsersPage, SettingsPage,
+  TicketDetailPage, AssetDetailPage, KnowledgeDetailPage,
+} from './pages'
+import RolesPage from './pages/RolesPage'
 
 function ProtectedRoutes() {
   const { user } = useAuth()
-  if (!user) return <Navigate to="/login" />
-
+  if (!user) return <Navigate to="/login" replace />
   return (
     <AppLayout>
       <Routes>
-        <Route path="/dashboard"  element={<DashboardPage />} />
-        <Route path="/tickets"    element={<TicketsPage />} />
-        <Route path="/tickets/:id" element={<TicketDetailPage />} />
-        <Route path="/assets"     element={<AssetsPage />} />
-        <Route path="/assets/:id" element={<AssetDetailPage />} />
-        <Route path="/knowledge"  element={<KnowledgePage />} />
-        <Route path="/knowledge/:id" element={<KnowledgeDetailPage />} />
-        <Route path="/monitoring" element={<MonitoringPage />} />
-        <Route path="/reports"    element={<ReportsPage />} />
-        <Route path="/users"      element={<UsersPage />} />
-        <Route path="/settings"   element={<SettingsPage />} />
-
-        {/* ── Role Management — hanya super_admin ── */}
-        <Route
-          path="/roles"
-          element={
-            <CanAccess role="super_admin" redirect="/dashboard">
-              <RolesPage />
-            </CanAccess>
-          }
-        />
-
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="/dashboard"    element={<CanAccess permission="dashboard.view"  redirect="/settings"><DashboardPage /></CanAccess>} />
+        <Route path="/tickets"      element={<CanAccess permission="tickets.view"    redirect="/dashboard"><TicketsPage /></CanAccess>} />
+        <Route path="/tickets/:id"  element={<CanAccess permission="tickets.view"    redirect="/dashboard"><TicketDetailPage /></CanAccess>} />
+        <Route path="/assets"       element={<CanAccess permission="assets.view"     redirect="/dashboard"><AssetsPage /></CanAccess>} />
+        <Route path="/assets/:id"   element={<CanAccess permission="assets.view"     redirect="/dashboard"><AssetDetailPage /></CanAccess>} />
+        <Route path="/knowledge"    element={<CanAccess permission="knowledge.view"  redirect="/dashboard"><KnowledgePage /></CanAccess>} />
+        <Route path="/knowledge/:id" element={<CanAccess permission="knowledge.view" redirect="/dashboard"><KnowledgeDetailPage /></CanAccess>} />
+        <Route path="/monitoring"   element={<CanAccess permission="monitoring.view" redirect="/dashboard"><MonitoringPage /></CanAccess>} />
+        <Route path="/reports"      element={<CanAccess permission="reports.view"    redirect="/dashboard"><ReportsPage /></CanAccess>} />
+        <Route path="/users"        element={<CanAccess permission="users.view"      redirect="/dashboard"><UsersPage /></CanAccess>} />
+        <Route path="/roles"        element={<CanAccess role="super_admin"           redirect="/dashboard"><RolesPage /></CanAccess>} />
+        <Route path="/settings"     element={<SettingsPage />} />
+        <Route path="*"             element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AppLayout>
   )
@@ -59,7 +41,7 @@ function Router() {
   const { user } = useAuth()
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       <Route path="/*" element={<ProtectedRoutes />} />
     </Routes>
   )
@@ -69,7 +51,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AppProvider>
-        <Router />
+        <PermissionProvider>
+          <Router />
+        </PermissionProvider>
       </AppProvider>
     </ThemeProvider>
   )
