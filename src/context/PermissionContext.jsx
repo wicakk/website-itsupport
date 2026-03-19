@@ -12,13 +12,14 @@ const PermissionContext = createContext(null)
 const NAV_PERMISSION_MAP = {
   dashboard:  'dashboard.view',
   tickets:    'tickets.view',
+  projects:   null,           // selalu tampil, akses dikontrol di backend
   assets:     'assets.view',
   knowledge:  'knowledge.view',
   monitoring: 'monitoring.view',
   reports:    'reports.view',
   users:      'users.view',
-  roles:      null,      // dikontrol role saja (super_admin), bukan permission
-  settings:   null,      // selalu tampil
+  roles:      null,           // dikontrol role saja (super_admin)
+  settings:   null,           // selalu tampil
 }
 
 const getHeaders = () => ({

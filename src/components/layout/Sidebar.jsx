@@ -2,7 +2,7 @@
 import {
   LayoutDashboard, Ticket, Package, BookOpen,
   Activity, BarChart3, Users, Settings,
-  Shield, Maximize2, LogOut
+  Shield, Maximize2, LogOut, Kanban
 } from 'lucide-react'
 import { Avatar } from '../ui'
 import { useApp, useAuth } from '../../context/AppContext'
@@ -10,11 +10,12 @@ import { useTheme } from '../../context/ThemeContext'
 import { usePermission } from '../../context/PermissionContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 
-const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield }
+const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Kanban }
 
 const NAV_ITEMS = [
   { id: 'dashboard',  label: 'Dashboard',       iconName: 'LayoutDashboard' },
   { id: 'tickets',    label: 'Tiket',            iconName: 'Ticket'          },
+  { id: 'projects',   label: 'Projects',         iconName: 'Kanban'          },
   { id: 'assets',     label: 'Asset Management', iconName: 'Package'         },
   { id: 'knowledge',  label: 'Knowledge Base',   iconName: 'BookOpen'        },
   { id: 'monitoring', label: 'Monitoring',       iconName: 'Activity'        },
