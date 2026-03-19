@@ -15,7 +15,7 @@ const PRIORITY_LABELS = { low:'Low', medium:'Medium', high:'High', urgent:'Urgen
 
 const STATUS_CFG = {
   active:    { label:'Aktif',      color:'#10B981', bg:'rgba(16,185,129,0.10)' },
-  on_hold:   { label:'On Hold',    color:'#F59E0B', bg:'rgba(245,158,11,0.10)' },
+  on_hold:   { label:'Pending',    color:'#F59E0B', bg:'rgba(245,158,11,0.10)' },
   completed: { label:'Selesai',    color:'#6366f1', bg:'rgba(99,102,241,0.10)' },
   cancelled: { label:'Dibatalkan', color:'#EF4444', bg:'rgba(239,68,68,0.10)'  },
 }
