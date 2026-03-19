@@ -2,7 +2,7 @@
 import {
   LayoutDashboard, Ticket, Package, BookOpen,
   Activity, BarChart3, Users, Settings,
-  Shield, Maximize2, LogOut, Kanban
+  Shield, Maximize2, LogOut, Kanban, BookMarked
 } from 'lucide-react'
 import { Avatar } from '../ui'
 import { useApp, useAuth } from '../../context/AppContext'
@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext'
 import { usePermission } from '../../context/PermissionContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 
-const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Kanban }
+const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Kanban, BookMarked }
 
 const NAV_ITEMS = [
   { id: 'dashboard',  label: 'Dashboard',       iconName: 'LayoutDashboard' },
@@ -21,8 +21,9 @@ const NAV_ITEMS = [
   { id: 'monitoring', label: 'Monitoring',       iconName: 'Activity'        },
   { id: 'reports',    label: 'Reports',          iconName: 'BarChart3'       },
   { id: 'users',      label: 'User Management',  iconName: 'Users'           },
-  { id: 'roles',      label: 'Role Management',  iconName: 'Shield'          },
-  { id: 'settings',   label: 'Settings',         iconName: 'Settings'        },
+  { id: 'roles',      label: 'Role Management',    iconName: 'Shield'       },
+  { id: 'master',     label: 'Master Data',        iconName: 'BookMarked'   },
+  { id: 'settings',   label: 'Settings',           iconName: 'Settings'     },
 ]
 
 const NavItem = ({ item, active, collapsed, onClick }) => {

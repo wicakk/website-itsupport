@@ -11,7 +11,8 @@ import {
   MonitoringPage, ReportsPage, UsersPage, SettingsPage,
   TicketDetailPage, AssetDetailPage, KnowledgeDetailPage,
 } from './pages'
-import RolesPage        from './pages/RolesPage'
+import RolesPage             from './pages/RolesPage'
+import MasterCategoriesPage  from './pages/MasterCategoriesPage'
 import ProjectsPage     from './pages/ProjectsPage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
 

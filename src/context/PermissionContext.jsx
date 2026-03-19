@@ -1,7 +1,4 @@
-// src/context/PermissionContext.jsx
-//
-// Sumber kebenaran tunggal permissions — data dari DATABASE via API.
-// Saat RolesPage simpan → API dipanggil → context update → seluruh app reaktif.
+
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useAuth } from './AppContext'
@@ -19,6 +16,7 @@ const NAV_PERMISSION_MAP = {
   reports:    'reports.view',
   users:      'users.view',
   roles:      null,           // dikontrol role saja (super_admin)
+  master:     null,           // master data — hanya manager_it ke atas
   settings:   null,           // selalu tampil
 }
 
@@ -108,6 +106,7 @@ export function PermissionProvider({ children }) {
       if (!user) return false
       if (user.role === 'super_admin') return true  // super admin lihat semua
       if (navId === 'roles') return false            // roles hanya super_admin
+      if (navId === 'master') return ['super_admin','manager_it'].includes(user.role)  // master hanya manager_it ke atas
       if (navId === 'settings') return true          // settings bebas
 
       const requiredPerm = NAV_PERMISSION_MAP[navId]
