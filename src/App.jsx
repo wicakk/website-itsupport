@@ -34,7 +34,8 @@ function ProtectedRoutes() {
         <Route path="/monitoring"    element={<CanAccess permission="monitoring.view" redirect="/dashboard"><MonitoringPage /></CanAccess>} />
         <Route path="/reports"       element={<CanAccess permission="reports.view"    redirect="/dashboard"><ReportsPage /></CanAccess>} />
         <Route path="/users"         element={<CanAccess permission="users.view"      redirect="/dashboard"><UsersPage /></CanAccess>} />
-        <Route path="/roles"         element={<CanAccess role="super_admin"           redirect="/dashboard"><RolesPage /></CanAccess>} />
+        <Route path="/roles"         element={<CanAccess role="super_admin"                            redirect="/dashboard"><RolesPage /></CanAccess>} />
+        <Route path="/master"        element={<CanAccess role={['super_admin','manager_it']}          redirect="/dashboard"><MasterCategoriesPage /></CanAccess>} />
         <Route path="/settings"      element={<SettingsPage />} />
         <Route path="*"              element={<Navigate to="/dashboard" replace />} />
       </Routes>

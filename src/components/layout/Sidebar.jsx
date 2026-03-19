@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { id: 'reports',    label: 'Reports',          iconName: 'BarChart3'       },
   { id: 'users',      label: 'User Management',  iconName: 'Users'           },
   { id: 'roles',      label: 'Role Management',    iconName: 'Shield'       },
-  { id: 'master',     label: 'Master Data',        iconName: 'BookMarked'   },
+  { id: 'master',     label: 'Master Category',        iconName: 'BookMarked'   },
   { id: 'settings',   label: 'Settings',           iconName: 'Settings'     },
 ]
 

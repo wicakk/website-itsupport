@@ -8,6 +8,7 @@ export { default as ReportsPage }    from './ReportsPage'
 export { default as UsersPage }      from './UsersPage'
 export { default as SettingsPage }   from './SettingsPage'
 export { default as RolesPage }      from './RolesPage'   // ← baru
+export { default as MasterCategoriesPage }      from './MasterCategoriesPage'   // ← baru
 
 // Detail Pages
 export { default as TicketDetailPage }    from './TicketDetailPage'
