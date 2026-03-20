@@ -90,10 +90,17 @@ export const AppProvider = ({ children }) => {
 
   const unreadCount = notifs.filter((n) => !n.read).length;
 
-  const authFetch = useCallback(
-    (url, options = {}) => apiFetch(url, token, options),
-    [token]
-  );
+  const authFetch = (url, options = {}) => {
+    const isFormData = options.body instanceof FormData
+
+    const headers = {
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      'Authorization': `Bearer ${token}`,
+      ...options.headers,
+    }
+
+    return fetch(url, { ...options, headers })
+  }
 
   return (
     <AppContext.Provider

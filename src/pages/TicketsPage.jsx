@@ -143,23 +143,30 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
     if (Object.keys(e).length) { setErrors(e); return }
     setSaving(true)
     try {
-      if (files.length > 0) {
-        const fd = new FormData()
-        fd.append('title', form.title)
-        fd.append('category', form.category)
-        fd.append('priority', form.priority)
-        fd.append('description', form.description)
-        files.forEach(f => fd.append('attachments[]', f))
-        const res = await authFetch('/api/tickets', { method: 'POST', body: fd })
-        if (!res.ok) throw new Error('Gagal membuat tiket')
-      } else {
-        const res = await authFetch('/api/tickets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        })
-        if (!res.ok) throw new Error('Gagal membuat tiket')
+      // Selalu pakai FormData agar konsisten (baik ada file maupun tidak)
+      const fd = new FormData()
+      fd.append('title', form.title)
+      fd.append('category', form.category)
+      fd.append('priority', form.priority)
+      fd.append('description', form.description)
+      files.forEach(f => fd.append('attachments[]', f))
+
+      // ⚠️ JANGAN set Content-Type header — biarkan browser handle boundary
+      const res = await authFetch('/api/tickets', {
+        method: 'POST',
+        body: fd,
+        // headers sengaja tidak diset
+      })
+
+      if (!res.ok) {
+        // Tampilkan error detail dari Laravel
+        const errData = await res.json().catch(() => ({}))
+        const msg = errData.message
+          || Object.values(errData.errors ?? {}).flat().join(', ')
+          || 'Gagal membuat tiket'
+        throw new Error(msg)
       }
+
       onSubmit()
     } catch (err) {
       setErrors({ _global: err.message })

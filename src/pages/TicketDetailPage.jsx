@@ -107,6 +107,8 @@ const AssignDropdown = ({ agents, current, onAssign, assigning, theme }) => {
   )
 }
 
+
+
 // Ticket Title Card
 const TicketTitleCard = ({ ticket, theme }) => (
   <div className="rounded-xl p-5 flex flex-col gap-3" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
@@ -127,15 +129,46 @@ const TicketTitleCard = ({ ticket, theme }) => (
       <p className="text-sm leading-relaxed border-t pt-3 mt-1 whitespace-pre-wrap break-words" style={{ color: theme.text, borderColor: theme.border }}>{ticket.description}</p>
     )}
     {ticket.attachments?.length > 0 && (
-      <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: theme.border }}>
-        {ticket.attachments.map((a, i) => (
-          <a key={i} href={a.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition" style={{ color: theme.accent, background: theme.accentSoft, border: `1px solid ${theme.borderAccent}` }} onMouseEnter={(e) => e.target.style.color = theme.accentHover} onMouseLeave={(e) => e.target.style.color = theme.accent}>
+    <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: theme.border }}>
+      {ticket.attachments.map((a, i) => {
+        // ✅ fallback kalau url tidak ada dari backend
+        const fileUrl =
+          a.url ||
+          (a.path
+            ? `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/storage/${a.path}`
+            : null)
+
+        // ⛔ skip kalau tidak ada URL sama sekali
+        if (!fileUrl) return null
+
+        return (
+          <a
+            key={i}
+            href={fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            download={a.original_name ?? a.filename}
+            className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition"
+            style={{
+              color: theme.accent,
+              background: theme.accentSoft,
+              border: `1px solid ${theme.borderAccent}`,
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = 0.8
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = 1
+            }}
+          >
             <Paperclip size={12} />
-            {a.original_name ?? a.name ?? `Lampiran ${i + 1}`}
+            {a.original_name ?? a.filename ?? `Lampiran ${i + 1}`}
           </a>
-        ))}
-      </div>
-    )}
+        )
+      })}
+    </div>
+  )}
   </div>
 )
 
