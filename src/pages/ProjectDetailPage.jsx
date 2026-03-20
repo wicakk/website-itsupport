@@ -449,13 +449,16 @@ export default function ProjectDetailPage() {
     } catch { loadProject() }
   }
 
-  // ── Stats ──────────────────────────────────────────────────────
-  const allTasks  = (project?.columns??[]).flatMap(c=>c.tasks??[])
-  const prodCol   = project?.columns?.find(c=>c.name==='Prod')
-  const doneTasks = prodCol?(prodCol.tasks??[]).length:0
-  const progress  = allTasks.length>0?Math.round((doneTasks/allTasks.length)*100):0
-  const isLate    = project?.due_date && !['completed','cancelled'].includes(project?.status) && new Date(project.due_date)<new Date()
-  const hasPendingTasks = allTasks.some(t=>{ const col=project?.columns?.find(c=>c.id===t.column_id); return col?.name!=='Prod' })
+  // ── Stats (reactive dari project.columns state) ──────────────
+  const allTasks    = (project?.columns??[]).flatMap(c=>c.tasks??[])
+  const prodCol     = (project?.columns??[]).find(c=>c.name==='Prod')
+  const doneTasks   = (prodCol?.tasks??[]).length
+  const progress    = allTasks.length>0 ? Math.round((doneTasks/allTasks.length)*100) : 0
+  const isLate      = project?.due_date && !['completed','cancelled'].includes(project?.status) && new Date(project.due_date)<new Date()
+  const hasPendingTasks = allTasks.some(t=>{
+    const col = (project?.columns??[]).find(c=>c.id===t.column_id)
+    return !col || col.name!=='Prod'
+  })
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:300, gap:10, color:theme.textMuted, fontSize:13 }}>
@@ -594,7 +597,7 @@ export default function ProjectDetailPage() {
                   </div>
                   {/* Actions */}
                   <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                    <a href={att.url} target="_blank" rel="noreferrer" title="Lihat/Download"
+                    <a href={att.url} download={att.filename} target="_blank" rel="noreferrer" title="Download"
                       style={{ width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:6, background:'transparent', border:`1px solid ${theme.border}`, color:theme.accent, textDecoration:'none', cursor:'pointer' }}
                       onMouseEnter={e=>{ e.currentTarget.style.background=theme.accent; e.currentTarget.style.color='#fff' }}
                       onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color=theme.accent }}
@@ -750,7 +753,8 @@ export default function ProjectDetailPage() {
                           const extColor = { pdf:'#EF4444', doc:'#3B82F6', docx:'#3B82F6', xls:'#10B981', xlsx:'#10B981' }[ext] ?? theme.accent
                           return (
                             <a key={att.id} href={att.url} target="_blank" rel="noreferrer"
-                              style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:8, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, textDecoration:'none', transition:'border-color 0.15s' }}
+                              download={att.filename}
+                            style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:8, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, textDecoration:'none', transition:'border-color 0.15s' }}
                               onMouseEnter={e=>e.currentTarget.style.borderColor=theme.accent+'55'}
                               onMouseLeave={e=>e.currentTarget.style.borderColor=theme.border}
                             >

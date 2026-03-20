@@ -263,11 +263,11 @@ function ProjectCard({ project, onEdit, onDelete, canManage, theme, onClick }) {
           <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
             <span style={{ fontSize:10, color:theme.textMuted }}>Progress</span>
             <span style={{ fontSize:10, fontWeight:600, color:theme.text }}>
-              {project.task_stats?.total > 0 ? Math.round(((project.task_stats?.completed??0)/project.task_stats.total)*100) : 0}%
+              {project.task_stats?.progress ?? (project.task_stats?.total > 0 ? Math.round(((project.task_stats?.completed??0)/project.task_stats.total)*100) : 0)}%
             </span>
           </div>
           <div style={{ height:3, borderRadius:2, background:theme.border, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${project.task_stats?.total > 0 ? Math.round(((project.task_stats?.completed??0)/project.task_stats.total)*100) : 0}%`, background:project.color, borderRadius:2 }}/>
+            <div style={{ height:'100%', width:`${project.task_stats?.progress ?? (project.task_stats?.total > 0 ? Math.round(((project.task_stats?.completed??0)/project.task_stats.total)*100) : 0)}%`, background:project.color, borderRadius:2, transition:'width 0.5s' }}/>
           </div>
         </div>
 
@@ -326,6 +326,11 @@ export default function ProjectsPage() {
     fetchProjects()
     fetch('/api/users',{ headers:{ Accept:'application/json', Authorization:`Bearer ${localStorage.getItem('token')}` } })
       .then(r=>r.json()).then(j=>setUsers(j.data??[]))
+
+    // Refresh saat user kembali ke halaman ini (dari detail page)
+    const onFocus = () => fetchProjects()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   },[fetchProjects])
 
   const handleSave = async (form, files=[]) => {
