@@ -1,134 +1,135 @@
-import { useState, useEffect } from 'react'
+// src/pages/ReportsPage.jsx
+import { useState, useEffect, useCallback } from 'react'
 import {
   BarChart3, TrendingUp, Zap, Package,
   FileText, Download, Ticket, CheckCheck,
-  Clock, Loader2,
+  Clock, Loader2, Filter, X, User, Calendar,
 } from 'lucide-react'
 import { PageHeader } from '../components/ui'
 import { useAuth } from '../context/AppContext'
+import { useTheme } from '../context/ThemeContext'
 
-// ─── Report definitions ───────────────────────────────────────
 const REPORTS = [
-  {
-    key:   'tickets',
-    title: 'Laporan Tiket Bulanan',
-    desc:  'Ringkasan tiket per bulan termasuk kategori dan prioritas.',
-    icon:  BarChart3,
-    color: { text: 'text-blue-400',    bg: 'bg-blue-400/10',    border: 'border-blue-400/20'    },
-  },
-  {
-    key:   'technicians',
-    title: 'Kinerja Teknisi',
-    desc:  'Analisis performa tim IT Support berdasarkan tiket diselesaikan.',
-    icon:  TrendingUp,
-    color: { text: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'border-violet-400/20'  },
-  },
-  {
-    key:   'sla',
-    title: 'SLA Performance Report',
-    desc:  'Tingkat keberhasilan penyelesaian tiket sesuai SLA agreement.',
-    icon:  Zap,
-    color: { text: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'border-amber-400/20'   },
-  },
-  {
-    key:   'assets',
-    title: 'Inventaris Aset IT',
-    desc:  'Laporan lengkap aset IT perusahaan beserta status dan warranty.',
-    icon:  Package,
-    color: { text: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-  },
+  { key:'tickets',     title:'Laporan Tiket',      desc:'Ringkasan tiket berdasarkan periode dan filter.', icon:BarChart3,  color:'#3B82F6' },
+  { key:'technicians', title:'Kinerja Teknisi',     desc:'Performa tim IT berdasarkan tiket diselesaikan.', icon:TrendingUp, color:'#8B5CF6' },
+  { key:'sla',         title:'SLA Performance',     desc:'Tingkat keberhasilan penyelesaian tiket sesuai SLA.', icon:Zap,   color:'#F59E0B' },
+  { key:'assets',      title:'Inventaris Aset IT',  desc:'Laporan lengkap aset IT beserta status dan warranty.', icon:Package, color:'#10B981' },
 ]
 
-// ─── Preview columns ──────────────────────────────────────────
 const PREVIEW_COLS = {
   tickets: [
-    { key: 'ticket_number', label: 'No. Tiket',  render: (v, row) => v ?? `#${row.id}` },
-    { key: 'title',         label: 'Judul'       },
-    { key: 'category',      label: 'Kategori'    },
-    { key: 'priority',      label: 'Prioritas'   },
-    { key: 'status',        label: 'Status'      },
-    { key: 'requester',     label: 'Reporter',   render: (v) => v?.name ?? '—' },
-    { key: 'assignee',      label: 'Assigned',   render: (v) => v?.name ?? 'Unassigned' },
-    { key: 'created_at',    label: 'Dibuat',     render: (v) => v ? new Date(v).toLocaleDateString('id-ID') : '—' },
-    { key: 'sla_breached',  label: 'SLA Breach', render: (v) => v ? '⚠️ Ya' : '✓ Tidak' },
+    { key:'ticket_number', label:'No. Tiket',  render:(v,r)=>v??`#${r.id}` },
+    { key:'title',         label:'Judul' },
+    { key:'category',      label:'Kategori' },
+    { key:'priority',      label:'Prioritas' },
+    { key:'status',        label:'Status' },
+    { key:'requester',     label:'Reporter',  render:(v)=>v?.name??'—' },
+    { key:'assignee',      label:'Assigned',  render:(v)=>v?.name??'Unassigned' },
+    { key:'created_at',    label:'Dibuat',    render:(v)=>v?new Date(v).toLocaleDateString('id-ID'):'—' },
+    { key:'sla_breached',  label:'SLA',       render:(v)=>v?'⚠️ Breach':'✓ OK' },
   ],
   technicians: [
-    { key: 'name',           label: 'Teknisi'         },
-    { key: 'role',           label: 'Role'            },
-    { key: 'total_assigned', label: 'Ditugaskan'      },
-    { key: 'resolved_count', label: 'Resolved'        },
-    { key: 'sla_met',        label: 'SLA Terpenuhi'   },
-    { key: 'sla_score',      label: 'SLA %',          render: (v) => v != null ? `${v}%` : '—' },
-    { key: 'avg_hours',      label: 'Avg Waktu (jam)' },
+    { key:'name',           label:'Teknisi' },
+    { key:'role',           label:'Role' },
+    { key:'total_assigned', label:'Ditugaskan' },
+    { key:'resolved_count', label:'Resolved' },
+    { key:'sla_met',        label:'SLA Terpenuhi' },
+    { key:'sla_score',      label:'SLA %', render:(v)=>v!=null?`${v}%`:'—' },
+    { key:'avg_hours',      label:'Avg Waktu (jam)' },
   ],
   sla: [
-    { key: 'priority', label: 'Prioritas'   },
-    { key: 'target',   label: 'Target SLA'  },
-    { key: 'total',    label: 'Total Tiket' },
-    { key: 'on_time',  label: 'Tepat Waktu' },
-    { key: 'breached', label: 'Terlambat'   },
-    { key: 'achieved', label: 'Tercapai',   render: (v) => v != null ? `${v}%` : '—' },
+    { key:'priority', label:'Prioritas' },
+    { key:'target',   label:'Target SLA' },
+    { key:'total',    label:'Total Tiket' },
+    { key:'on_time',  label:'Tepat Waktu' },
+    { key:'breached', label:'Terlambat' },
+    { key:'achieved', label:'Tercapai %', render:(v)=>v!=null?`${v}%`:'—' },
   ],
   assets: [
-    { key: 'asset_number',    label: 'No. Aset'   },
-    { key: 'name',            label: 'Nama'        },
-    { key: 'category',        label: 'Kategori'    },
-    { key: 'status',          label: 'Status'      },
-    { key: 'location',        label: 'Lokasi'      },
-    { key: 'warranty_expiry', label: 'Garansi s/d' },
+    { key:'asset_number',    label:'No. Aset' },
+    { key:'name',            label:'Nama' },
+    { key:'category',        label:'Kategori' },
+    { key:'status',          label:'Status' },
+    { key:'location',        label:'Lokasi' },
+    { key:'warranty_expiry', label:'Garansi s/d' },
   ],
 }
 
-// ─── ReportsPage ──────────────────────────────────────────────
 const ReportsPage = () => {
   const { authFetch } = useAuth()
+  const { T: theme }  = useTheme()
 
   const [loadingKey,     setLoadingKey]     = useState(null)
   const [stats,          setStats]          = useState(null)
   const [preview,        setPreview]        = useState(null)
   const [previewLoading, setPreviewLoading] = useState(null)
+  const [users,          setUsers]          = useState([])
+  const [showFilter,     setShowFilter]     = useState(false)
+  const [filters,        setFilters]        = useState({ from:'', to:'', user_id:'', status:'' })
 
-  const month = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+  const month = new Date().toLocaleDateString('id-ID',{ month:'long', year:'numeric' })
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await authFetch('/api/reports/summary')
-        if (!res.ok) throw new Error()
-        setStats(await res.json())
-      } catch { /* silent */ }
-    }
-    load()
+  // Load data dengan token langsung (lebih reliable)
+  const loadData = useCallback(async () => {
+    const token = localStorage.getItem('token')
+    const h = { Accept:'application/json', Authorization:`Bearer ${token}` }
+    try {
+      const [sumRes, usrRes] = await Promise.all([
+        fetch('/api/reports/summary', { headers: h }),
+        fetch('/api/users?per_page=100', { headers: h }),
+      ])
+      if (sumRes.ok) setStats(await sumRes.json())
+      if (usrRes.ok) {
+        const j = await usrRes.json()
+        setUsers(j.data ?? j ?? [])
+      }
+    } catch(e) { console.warn('load error:', e) }
   }, [])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  const buildParams = (extra={}) => {
+    const p = new URLSearchParams()
+    if (filters.from)    p.set('from',    filters.from)
+    if (filters.to)      p.set('to',      filters.to)
+    if (filters.user_id) p.set('user_id', filters.user_id)
+    if (filters.status)  p.set('status',  filters.status)
+    Object.entries(extra).forEach(([k,v])=>v&&p.set(k,v))
+    return p.toString() ? '?'+p.toString() : ''
+  }
 
   const handleExport = async (key, format) => {
     const id = `${key}-${format}`
     try {
       setLoadingKey(id)
-      const res = await authFetch(`/api/reports/${key}?format=${format}`)
-      if (!res.ok) throw new Error(await res.text())
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/reports/${key}${buildParams({ format })}`, {
+        headers: { Accept:'application/json', Authorization:`Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error()
       const blob = await res.blob()
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
       a.href     = url
-      a.download = `${key}-report.${format === 'excel' ? 'xlsx' : 'pdf'}`
+      const from = filters.from ? `_${filters.from}` : ''
+      const to   = filters.to   ? `_sd_${filters.to}` : ''
+      const usr  = filters.user_id ? `_${users.find(u=>String(u.id)===filters.user_id)?.name?.replace(/\s+/g,'_')??'user'}` : ''
+      a.download = `${key}-report${from}${to}${usr}.${format==='excel'?'xlsx':'pdf'}`
       document.body.appendChild(a); a.click(); a.remove()
       URL.revokeObjectURL(url)
-    } catch {
-      alert('Gagal export laporan')
-    } finally {
-      setLoadingKey(null)
-    }
+    } catch { alert('Gagal export laporan') }
+    finally { setLoadingKey(null) }
   }
 
   const handlePreview = async (key) => {
     if (preview?.key === key) { setPreview(null); return }
     setPreviewLoading(key)
     try {
-      const url = key === 'sla' || key === 'technicians'
-        ? `/api/reports/${key}`
-        : `/api/reports/${key}?format=json`
-      const res  = await authFetch(url)
+      const token = localStorage.getItem('token')
+      const url = key==='sla'||key==='technicians'
+        ? `/api/reports/${key}${buildParams()}`
+        : `/api/reports/${key}${buildParams({ format:'json' })}`
+      const res  = await fetch(url, { headers:{ Accept:'application/json', Authorization:`Bearer ${token}` } })
       if (!res.ok) throw new Error()
       const data = await res.json()
       let rows = []
@@ -136,121 +137,209 @@ const ReportsPage = () => {
       else if (Array.isArray(data.data)) rows = data.data
       else if (Array.isArray(data.rows)) rows = data.rows
       setPreview({ key, rows })
-    } catch {
-      setPreview({ key, rows: [] })
-    } finally {
-      setPreviewLoading(null)
-    }
+    } catch { setPreview({ key, rows:[] }) }
+    finally { setPreviewLoading(null) }
+  }
+
+  const resetFilters = () => setFilters({ from:'', to:'', user_id:'', status:'' })
+  const activeCount  = Object.values(filters).filter(v=>v).length
+
+  // Style helpers — menggunakan theme untuk dark/light mode
+  const inp = {
+    padding:'8px 12px', borderRadius:8,
+    border:`1px solid ${theme.border}`,
+    background:theme.surfaceAlt,
+    color:theme.text,
+    fontSize:12, outline:'none', fontFamily:'inherit',
+    width:'100%', boxSizing:'border-box',
+  }
+  const lbl = {
+    fontSize:10, fontWeight:700, textTransform:'uppercase',
+    letterSpacing:'0.07em', color:theme.textMuted,
+    marginBottom:5, display:'block',
   }
 
   const STATS = [
-    { label: 'Total Tiket',    value: stats?.total_tickets ?? '—',              icon: Ticket,     color: 'text-blue-400',    bg: 'bg-blue-400/10',    border: 'border-blue-400/20'    },
-    { label: 'Resolved',       value: stats?.resolved ?? '—',                   icon: CheckCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-    { label: 'Avg Resolution', value: stats ? `${stats.avg_resolution}h` : '—', icon: Clock,      color: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'border-amber-400/20'   },
-    { label: 'SLA Score',      value: stats ? `${stats.sla_score}%` : '—',      icon: Zap,        color: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'border-violet-400/20'  },
+    { label:'Total Tiket',    value:stats?.total_tickets??'—', color:'#3B82F6' },
+    { label:'Resolved',       value:stats?.resolved??'—',      color:'#10B981' },
+    { label:'Avg Resolution', value:stats?`${stats.avg_resolution}h`:'—', color:'#F59E0B' },
+    { label:'SLA Score',      value:stats?`${stats.sla_score}%`:'—', color:'#8B5CF6' },
   ]
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-5">
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
-      <PageHeader title="Reports" subtitle="Generate dan export laporan IT Support" />
+      {/* ── Header + Filter Toggle ─────────────────────────── */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
+        <PageHeader title="Reports" subtitle="Generate dan export laporan IT Support"/>
+        <button onClick={()=>setShowFilter(f=>!f)}
+          style={{
+            display:'flex', alignItems:'center', gap:6,
+            padding:'8px 14px', borderRadius:10,
+            border:`1px solid ${showFilter?theme.accent:theme.border}`,
+            background:showFilter?`${theme.accent}18`:'transparent',
+            color:showFilter?theme.accent:theme.textMuted,
+            fontSize:12, fontWeight:600, cursor:'pointer',
+          }}>
+          <Filter size={13}/>
+          Filter
+          {activeCount > 0 && (
+            <span style={{ width:18, height:18, borderRadius:'50%', background:theme.accent, color:'#fff', fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {activeCount}
+            </span>
+          )}
+        </button>
+      </div>
 
-      {/* ── Report Cards: 1 col mobile, 2 col sm+ ── */}
-      <div  className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
-        {REPORTS.map(({ key, title, desc, icon: Icon, color }) => {
-          const isOpenPreview = preview?.key === key
-          const isPrevLoading = previewLoading === key
+      {/* ── Filter Panel ────────────────────────────────────── */}
+      {showFilter && (
+        <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:12, padding:16 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+            <Filter size={13} color={theme.accent}/>
+            <span style={{ fontSize:13, fontWeight:700, color:theme.text }}>Filter Laporan</span>
+            {activeCount > 0 && (
+              <button onClick={resetFilters}
+                style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:4, fontSize:11, color:theme.textMuted, background:'none', border:'none', cursor:'pointer' }}>
+                <X size={11}/>Reset Filter
+              </button>
+            )}
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12 }}>
+            {/* Dari Tanggal */}
+            <div>
+              <label style={lbl}>Dari Tanggal</label>
+              <input type="date" value={filters.from}
+                onChange={e=>setFilters(f=>({...f,from:e.target.value}))} style={inp}/>
+            </div>
+            {/* Sampai Tanggal */}
+            <div>
+              <label style={lbl}>Sampai Tanggal</label>
+              <input type="date" value={filters.to}
+                onChange={e=>setFilters(f=>({...f,to:e.target.value}))} style={inp}/>
+            </div>
+            {/* User / Teknisi */}
+            <div>
+              <label style={lbl}>User / Teknisi</label>
+              <select value={filters.user_id}
+                onChange={e=>setFilters(f=>({...f,user_id:e.target.value}))} style={inp}>
+                <option value="">— Semua User —</option>
+                {users.length === 0
+                  ? <option disabled>Memuat...</option>
+                  : users.map(u=>(
+                      <option key={u.id} value={String(u.id)}>
+                        {u.name} ({u.role ?? u.role_display ?? '—'})
+                      </option>
+                    ))
+                }
+              </select>
+            </div>
+            {/* Status */}
+            <div>
+              <label style={lbl}>Status Tiket</label>
+              <select value={filters.status}
+                onChange={e=>setFilters(f=>({...f,status:e.target.value}))} style={inp}>
+                <option value="">— Semua Status —</option>
+                {['Open','Assigned','In Progress','Waiting User','Resolved','Closed'].map(s=>(
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {/* Active filter badges */}
+          {activeCount > 0 && (
+            <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:10 }}>
+              {filters.from    && <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${theme.accent}20`, color:theme.accent, border:`1px solid ${theme.accent}44` }}>Dari: {filters.from}</span>}
+              {filters.to      && <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${theme.accent}20`, color:theme.accent, border:`1px solid ${theme.accent}44` }}>Sampai: {filters.to}</span>}
+              {filters.user_id && <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:'#8B5CF620', color:'#8B5CF6', border:'1px solid #8B5CF644' }}>
+                User: {users.find(u=>String(u.id)===filters.user_id)?.name ?? filters.user_id}
+              </span>}
+              {filters.status  && <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:'#10B98120', color:'#10B981', border:'1px solid #10B98144' }}>Status: {filters.status}</span>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Report Cards ─────────────────────────────────────── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:14 }}>
+        {REPORTS.map(({ key, title, desc, icon:Icon, color }) => {
+          const isOpen     = preview?.key === key
+          const isPrevLoad = previewLoading === key
 
           return (
-            <div key={key} className="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 sm:gap-4 hover:border-gray-600 transition">
-
-              {/* Icon + title */}
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${color.bg} ${color.border}`}>
-                  <Icon size={18} className={color.text} />
+            <div key={key} style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:14, padding:'16px 18px', display:'flex', flexDirection:'column', gap:14 }}>
+              {/* Card Header */}
+              <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                <div style={{ width:40, height:40, borderRadius:12, background:`${color}18`, border:`1px solid ${color}33`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Icon size={18} color={color}/>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-gray-100 font-bold text-sm">{title}</p>
-                  <p className="text-gray-500 text-xs mt-1 leading-relaxed">{desc}</p>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:theme.text }}>{title}</div>
+                  <div style={{ fontSize:11, color:theme.textMuted, marginTop:2, lineHeight:1.4 }}>{desc}</div>
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex gap-1.5 sm:gap-2">
-                {/* Preview */}
-                <button
-                  onClick={() => handlePreview(key)}
-                  disabled={loadingKey !== null || isPrevLoading}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-semibold transition disabled:opacity-50
-                    ${isOpenPreview
-                      ? 'bg-gray-700 border-gray-600 text-gray-200'
-                      : 'bg-white/5 border-gray-700 text-gray-400 hover:bg-white/10 hover:text-gray-200'}`}
-                >
-                  {isPrevLoading
-                    ? <><Loader2 size={11} className="animate-spin" /> Memuat...</>
-                    : <><FileText size={11} /> <span className="hidden xs:inline">{isOpenPreview ? 'Tutup' : 'Preview'}</span><span className="xs:hidden">{isOpenPreview ? '✕' : 'show'}</span></>
+              {/* Filter aktif indicator */}
+              {activeCount > 0 && (
+                <div style={{ fontSize:10, color:theme.accent, background:`${theme.accent}10`, border:`1px solid ${theme.accent}25`, borderRadius:6, padding:'4px 8px', display:'flex', alignItems:'center', gap:5 }}>
+                  <Filter size={9}/>Preview & download menggunakan filter yang aktif
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={()=>handlePreview(key)} disabled={!!loadingKey||isPrevLoad}
+                  style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'8px', borderRadius:8, border:`1px solid ${isOpen?color:theme.border}`, background:isOpen?`${color}18`:'transparent', color:isOpen?color:theme.textMuted, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                  {isPrevLoad
+                    ? <><Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> Memuat...</>
+                    : <><FileText size={12}/>{isOpen?'Tutup':'Preview'}</>
                   }
                 </button>
-
-                {/* PDF */}
-                <button
-                  disabled={loadingKey !== null}
-                  onClick={() => handleExport(key, 'pdf')}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border bg-red-500/10 border-red-500/30 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition disabled:opacity-50"
-                >
-                  {loadingKey === `${key}-pdf`
-                    ? <><Loader2 size={11} className="animate-spin" /> <span className="hidden xs:inline">PDF...</span></>
-                    : <><FileText size={11} /> PDF</>
+                <button onClick={()=>handleExport(key,'pdf')} disabled={!!loadingKey}
+                  style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'8px', borderRadius:8, border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.08)', color:'#EF4444', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                  {loadingKey===`${key}-pdf`
+                    ? <><Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> PDF...</>
+                    : <><FileText size={12}/>PDF</>
                   }
                 </button>
-
-                {/* Excel */}
-                <button
-                  disabled={loadingKey !== null}
-                  onClick={() => handleExport(key, 'excel')}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border bg-emerald-500/10 border-emerald-500/30 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 transition disabled:opacity-50"
-                >
-                  {loadingKey === `${key}-excel`
-                    ? <><Loader2 size={11} className="animate-spin" /> <span className="hidden xs:inline">Excel...</span></>
-                    : <><Download size={11} /> Excel</>
+                <button onClick={()=>handleExport(key,'excel')} disabled={!!loadingKey}
+                  style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'8px', borderRadius:8, border:'1px solid rgba(16,185,129,0.3)', background:'rgba(16,185,129,0.08)', color:'#10B981', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                  {loadingKey===`${key}-excel`
+                    ? <><Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> Excel...</>
+                    : <><Download size={12}/>Excel</>
                   }
                 </button>
               </div>
 
-              {/* Preview table */}
-              {isOpenPreview && (
-                <div className="overflow-x-auto rounded-xl border border-gray-700 -mx-1">
-                  {preview.rows.length === 0 ? (
-                    <p className="text-gray-500 text-xs text-center py-6">Tidak ada data tersedia.</p>
-                  ) : (
-                    <table className="w-full text-xs min-w-[480px]">
-                      <thead className="bg-gray-800 sticky top-0">
-                        <tr>
-                          {PREVIEW_COLS[key]?.map(col => (
-                            <th key={col.key}
-                              className="px-3 py-2.5 text-left text-gray-400 font-semibold uppercase tracking-wider whitespace-nowrap">
-                              {col.label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.rows.map((row, i) => (
-                          <tr key={i} className={`border-t border-gray-800 ${i % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
-                            {PREVIEW_COLS[key]?.map(col => {
-                              const raw = row[col.key]
-                              const val = col.render ? col.render(raw, row) : (raw ?? '—')
-                              return (
-                                <td key={col.key} className="px-3 py-2 text-gray-300 whitespace-nowrap">
-                                  {val}
-                                </td>
-                              )
-                            })}
+              {/* Preview Table */}
+              {isOpen && (
+                <div style={{ overflowX:'auto', borderRadius:10, border:`1px solid ${theme.border}`, maxHeight:300, overflowY:'auto' }}>
+                  {preview.rows.length === 0
+                    ? <div style={{ textAlign:'center', padding:32, color:theme.textMuted, fontSize:12 }}>Tidak ada data untuk filter yang dipilih.</div>
+                    : (
+                      <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11, minWidth:500 }}>
+                        <thead>
+                          <tr style={{ background:theme.surfaceAlt }}>
+                            {PREVIEW_COLS[key]?.map(col=>(
+                              <th key={col.key} style={{ padding:'8px 12px', textAlign:'left', fontSize:10, fontWeight:700, color:theme.textMuted, textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap', borderBottom:`1px solid ${theme.border}`, position:'sticky', top:0, background:theme.surfaceAlt }}>
+                                {col.label}
+                              </th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+                        </thead>
+                        <tbody>
+                          {preview.rows.map((row,i)=>(
+                            <tr key={i} style={{ borderTop:`1px solid ${theme.border}`, background:i%2===1?theme.surfaceAlt+'80':'transparent' }}>
+                              {PREVIEW_COLS[key]?.map(col=>{
+                                const raw = row[col.key]
+                                const val = col.render ? col.render(raw,row) : (raw??'—')
+                                return <td key={col.key} style={{ padding:'7px 12px', color:theme.text, whiteSpace:'nowrap' }}>{val}</td>
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                  }
                 </div>
               )}
             </div>
@@ -258,23 +347,22 @@ const ReportsPage = () => {
         })}
       </div>
 
-      {/* ── Quick Stats ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 sm:p-5">
-        <p className="text-gray-200 font-bold text-sm mb-4">Quick Stats — {month}</p>
-
-        {/* 2 col mobile, 4 col sm+ */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-          {STATS.map(({ label, value, icon: Icon, color, bg, border }) => (
-            <div key={label}
-              className={`${bg} ${border} border rounded-xl py-3.5 sm:py-4 px-2 sm:px-3 text-center flex flex-col items-center gap-1.5 sm:gap-2`}>
-              <Icon size={15} className={color} />
-              <p className={`font-extrabold text-lg sm:text-xl ${color}`}>{value}</p>
-              <p className="text-gray-500 text-[10px] uppercase tracking-wider leading-tight">{label}</p>
+      {/* ── Quick Stats ─────────────────────────────────────── */}
+      <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:14, padding:'16px 18px' }}>
+        <div style={{ fontSize:13, fontWeight:700, color:theme.text, marginBottom:14 }}>
+          Quick Stats — {month}
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12 }}>
+          {STATS.map(({ label, value, color })=>(
+            <div key={label} style={{ background:`${color}10`, border:`1px solid ${color}25`, borderRadius:12, padding:'14px 16px', textAlign:'center' }}>
+              <div style={{ fontSize:24, fontWeight:800, color, lineHeight:1 }}>{value}</div>
+              <div style={{ fontSize:10, color:theme.textMuted, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:6 }}>{label}</div>
             </div>
           ))}
         </div>
       </div>
 
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 }
