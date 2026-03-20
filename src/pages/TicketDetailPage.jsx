@@ -6,12 +6,12 @@ import { useTheme } from '../context/ThemeContext'
 import { Badge } from '../components/ui'
 import { PRIORITY_CFG, STATUS_CFG, getTheme } from '../theme'
 
-// ─── UTILITIES ──────────────────────────────────────────────────
 const fmt = (iso) => !iso ? '—' : new Date(iso).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+const fileUrl = (a) => a?.url || (a?.path ? `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/storage/${a.path}` : null)
 
 // ─── COMPONENTS ─────────────────────────────────────────────────
 
-// Breadcrumb
 const Breadcrumb = ({ navigate, ticket, onRefresh, theme }) => (
   <div className="flex items-center gap-3 flex-wrap">
     <button onClick={() => navigate('/tickets')} className="flex items-center gap-1.5 text-sm transition" style={{ color: theme.textSub }} onMouseEnter={(e) => e.target.style.color = theme.text} onMouseLeave={(e) => e.target.style.color = theme.textSub}>
@@ -25,7 +25,6 @@ const Breadcrumb = ({ navigate, ticket, onRefresh, theme }) => (
   </div>
 )
 
-// Info Row
 const InfoRow = ({ label, children, theme }) => (
   <div className="flex flex-col gap-1">
     <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>{label}</span>
@@ -33,7 +32,6 @@ const InfoRow = ({ label, children, theme }) => (
   </div>
 )
 
-// Action Button
 const ActionButton = ({ icon: Icon, label, onClick, disabled, theme, color = 'blue' }) => {
   const colors = {
     green: { bg: 'rgba(16,185,129,0.10)', text: theme.success, border: 'rgba(16,185,129,0.22)' },
@@ -50,7 +48,6 @@ const ActionButton = ({ icon: Icon, label, onClick, disabled, theme, color = 'bl
   )
 }
 
-// Assign Dropdown
 const AssignDropdown = ({ agents, current, onAssign, assigning, theme }) => {
   const [open, setOpen] = useState(false), [search, setSearch] = useState(''), ref = useRef(null)
   useEffect(() => {
@@ -63,9 +60,7 @@ const AssignDropdown = ({ agents, current, onAssign, assigning, theme }) => {
     <div ref={ref} className="relative w-full">
       <button onClick={() => setOpen(o => !o)} disabled={assigning} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg transition" style={{ border: `1px solid ${assigning ? theme.border : 'rgba(245,158,11,0.22)'}`, fontSize: 12, fontWeight: 500, color: assigning ? theme.textMuted : theme.warning, background: assigning ? 'transparent' : 'rgba(245,158,11,0.10)', cursor: assigning ? 'not-allowed' : 'pointer', opacity: assigning ? 0.5 : 1 }}>
         <UserPlus size={14} />
-        <span className="flex-1 text-left truncate">
-          {assigning ? 'Menyimpan...' : current ? `Reassign (${current})` : 'Assign Tiket'}
-        </span>
+        <span className="flex-1 text-left truncate">{assigning ? 'Menyimpan...' : current ? `Reassign (${current})` : 'Assign Tiket'}</span>
         <ChevronDown size={14} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
       </button>
       {open && (
@@ -77,29 +72,24 @@ const AssignDropdown = ({ agents, current, onAssign, assigning, theme }) => {
           <div className="max-h-48 overflow-y-auto">
             {current && (
               <button onClick={() => { onAssign(null); setOpen(false); setSearch('') }} className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-xs transition border-b" style={{ color: theme.danger, borderColor: theme.border, background: 'transparent' }} onMouseEnter={(e) => e.target.style.background = 'rgba(239,68,68,0.08)'} onMouseLeave={(e) => e.target.style.background = 'transparent'}>
-                <XCircle size={14} />
-                Hapus assignment
+                <XCircle size={14} /> Hapus assignment
               </button>
             )}
             {filtered.length === 0 ? (
               <p className="text-xs px-3 py-4 text-center" style={{ color: theme.textMuted }}>Agent tidak ditemukan.</p>
-            ) : (
-              filtered.map(agent => {
-                const isCurrent = current === agent.name
-                return (
-                  <button key={agent.id} onClick={() => { onAssign(agent.id); setOpen(false); setSearch('') }} className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-xs transition" style={{ background: isCurrent ? 'rgba(245,158,11,0.10)' : 'transparent', color: isCurrent ? theme.warning : theme.textSub }} onMouseEnter={(e) => !isCurrent && (e.target.style.background = theme.surfaceHover)} onMouseLeave={(e) => !isCurrent && (e.target.style.background = 'transparent')}>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: theme.accent }}>
-                      {agent.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-xs font-medium truncate">{agent.name}</span>
-                      {agent.email && <span className="text-[10px] truncate" style={{ color: theme.textMuted }}>{agent.email}</span>}
-                    </div>
-                    {isCurrent && <Check size={14} style={{ color: theme.warning, marginLeft: 'auto' }} />}
-                  </button>
-                )
-              })
-            )}
+            ) : filtered.map(agent => {
+              const isCurrent = current === agent.name
+              return (
+                <button key={agent.id} onClick={() => { onAssign(agent.id); setOpen(false); setSearch('') }} className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-xs transition" style={{ background: isCurrent ? 'rgba(245,158,11,0.10)' : 'transparent', color: isCurrent ? theme.warning : theme.textSub }} onMouseEnter={(e) => !isCurrent && (e.target.style.background = theme.surfaceHover)} onMouseLeave={(e) => !isCurrent && (e.target.style.background = 'transparent')}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: theme.accent }}>{agent.name.charAt(0).toUpperCase()}</div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-xs font-medium truncate">{agent.name}</span>
+                    {agent.email && <span className="text-[10px] truncate" style={{ color: theme.textMuted }}>{agent.email}</span>}
+                  </div>
+                  {isCurrent && <Check size={14} style={{ color: theme.warning, marginLeft: 'auto' }} />}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -107,9 +97,7 @@ const AssignDropdown = ({ agents, current, onAssign, assigning, theme }) => {
   )
 }
 
-
-
-// Ticket Title Card
+// ✅ Ticket title card — hanya tampilkan attachment yang TIDAK punya comment_id (attachment asli tiket)
 const TicketTitleCard = ({ ticket, theme }) => (
   <div className="rounded-xl p-5 flex flex-col gap-3" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
     <div className="flex items-start justify-between gap-3">
@@ -120,59 +108,30 @@ const TicketTitleCard = ({ ticket, theme }) => (
       <span className="font-mono rounded px-2 py-0.5 whitespace-nowrap" style={{ background: theme.surfaceAlt, border: `1px solid ${theme.border}` }}>{ticket.ticket_number ?? `#${ticket.id}`}</span>
       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 whitespace-nowrap" style={{ background: theme.surfaceAlt, border: `1px solid ${theme.border}` }}>{ticket.category ?? '—'}</span>
       <Badge label={ticket.priority} cfg={PRIORITY_CFG[ticket.priority]} dot pulse={ticket.priority === 'Critical'} />
-      <span className="flex items-center gap-1 ml-auto" style={{ color: theme.textMuted }}>
-        <Clock size={12} />
-        {fmt(ticket.created_at)}
-      </span>
+      <span className="flex items-center gap-1 ml-auto" style={{ color: theme.textMuted }}><Clock size={12} />{fmt(ticket.created_at)}</span>
     </div>
     {ticket.description && (
       <p className="text-sm leading-relaxed border-t pt-3 mt-1 whitespace-pre-wrap break-words" style={{ color: theme.text, borderColor: theme.border }}>{ticket.description}</p>
     )}
-    {ticket.attachments?.length > 0 && (
-    <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: theme.border }}>
-      {ticket.attachments.map((a, i) => {
-        // ✅ fallback kalau url tidak ada dari backend
-        const fileUrl =
-          a.url ||
-          (a.path
-            ? `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/storage/${a.path}`
-            : null)
-
-        // ⛔ skip kalau tidak ada URL sama sekali
-        if (!fileUrl) return null
-
-        return (
-          <a
-            key={i}
-            href={fileUrl}
-            target="_blank"
-            rel="noreferrer"
-            download={a.original_name ?? a.filename}
-            className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition"
-            style={{
-              color: theme.accent,
-              background: theme.accentSoft,
-              border: `1px solid ${theme.borderAccent}`,
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = 0.8
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = 1
-            }}
-          >
-            <Paperclip size={12} />
-            {a.original_name ?? a.filename ?? `Lampiran ${i + 1}`}
-          </a>
-        )
-      })}
-    </div>
-  )}
+    {/* ✅ Hanya tampilkan attachment yang tidak punya comment_id (lampiran tiket asli) */}
+    {ticket.attachments?.filter(a => !a.comment_id).length > 0 && (
+      <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: theme.border }}>
+        {ticket.attachments.filter(a => !a.comment_id).map((a, i) => {
+          const url = fileUrl(a)
+          if (!url) return null
+          return (
+            <a key={i} href={url} target="_blank" rel="noreferrer" download={a.original_name ?? a.filename} className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition" style={{ color: theme.accent, background: theme.accentSoft, border: `1px solid ${theme.borderAccent}`, cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.opacity = 0.8 }} onMouseLeave={(e) => { e.currentTarget.style.opacity = 1 }}>
+              <Paperclip size={12} />
+              {a.original_name ?? a.filename ?? `Lampiran ${i + 1}`}
+            </a>
+          )
+        })}
+      </div>
+    )}
   </div>
 )
 
-// Comment Item
+// ✅ Comment item — tampilkan attachments di dalam bubble komentar
 const CommentItem = ({ comment, index, theme, currentUser, onDelete, deleting }) => {
   const displayName = comment.user?.name ?? comment.user_name ?? comment.author ?? (comment.user_id ? `User #${comment.user_id}` : 'Unknown')
   const initials = displayName.charAt(0).toUpperCase()
@@ -201,19 +160,26 @@ const CommentItem = ({ comment, index, theme, currentUser, onDelete, deleting })
             </button>
           )}
         </div>
+
         {bodyText ? (
           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words" style={{ color: theme.text }}>{bodyText}</p>
         ) : (
           <p className="text-sm italic" style={{ color: theme.textMuted }}>— (komentar kosong)</p>
         )}
+
+        {/* ✅ Attachment tampil di dalam bubble komentar */}
         {comment.attachments?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t" style={{ borderColor: theme.border }}>
-            {comment.attachments.map((a, idx) => (
-              <a key={idx} href={a.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition" style={{ color: theme.accent, background: theme.accentSoft, border: `1px solid ${theme.borderAccent}` }} onMouseEnter={(e) => e.target.style.color = theme.accentHover} onMouseLeave={(e) => e.target.style.color = theme.accent}>
-                <Paperclip size={12} />
-                {a.original_name ?? a.name ?? `File ${idx + 1}`}
-              </a>
-            ))}
+            {comment.attachments.map((a, idx) => {
+              const url = fileUrl(a)
+              if (!url) return null
+              return (
+                <a key={idx} href={url} target="_blank" rel="noreferrer" download={a.original_name ?? a.filename} className="flex items-center gap-1.5 text-xs rounded px-2 py-1 transition" style={{ color: theme.accent, background: theme.accentSoft, border: `1px solid ${theme.borderAccent}` }} onMouseEnter={(e) => e.currentTarget.style.opacity = 0.8} onMouseLeave={(e) => e.currentTarget.style.opacity = 1}>
+                  <Paperclip size={12} />
+                  {a.original_name ?? a.filename ?? `File ${idx + 1}`}
+                </a>
+              )
+            })}
           </div>
         )}
       </div>
@@ -221,7 +187,6 @@ const CommentItem = ({ comment, index, theme, currentUser, onDelete, deleting })
   )
 }
 
-// Comments Section
 const CommentsSection = ({ comments, comment, onCommentChange, onCommentSubmit, submitting, theme, onFileSelect, selectedFiles, currentUser, onDeleteComment, deletingCommentId }) => (
   <div className="rounded-xl overflow-hidden flex flex-col" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
     <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: theme.border }}>
@@ -236,15 +201,7 @@ const CommentsSection = ({ comments, comment, onCommentChange, onCommentSubmit, 
         <p className="text-xs px-5 py-6 text-center" style={{ color: theme.textMuted }}>Belum ada komentar.</p>
       ) : (
         comments.map((c, i) => (
-          <CommentItem
-            key={c.id ?? i}
-            comment={c}
-            index={i}
-            theme={theme}
-            currentUser={currentUser}
-            onDelete={onDeleteComment}
-            deleting={deletingCommentId === c.id}
-          />
+          <CommentItem key={c.id ?? i} comment={c} index={i} theme={theme} currentUser={currentUser} onDelete={onDeleteComment} deleting={deletingCommentId === c.id} />
         ))
       )}
     </div>
@@ -265,11 +222,11 @@ const CommentsSection = ({ comments, comment, onCommentChange, onCommentSubmit, 
       <div className="flex gap-3">
         <textarea value={comment} onChange={onCommentChange} onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) onCommentSubmit() }} placeholder="Tulis komentar... (Ctrl+Enter)" rows={3} className="flex-1 rounded-lg px-3 py-2 text-sm resize-none outline-none transition" style={{ background: theme.surfaceAlt, border: `1px solid ${theme.border}`, color: theme.text }} onFocus={(e) => e.target.style.borderColor = theme.accent} onBlur={(e) => e.target.style.borderColor = theme.border} />
         <div className="self-end flex flex-col gap-2">
-          <label htmlFor="file-input" className="flex items-center justify-center w-10 h-10 rounded-lg transition cursor-pointer" style={{ background: theme.accentSoft, border: `1px solid ${theme.borderAccent}`, color: theme.accent }} onMouseEnter={(e) => e.target.style.background = `${theme.accentSoft}cc`} onMouseLeave={(e) => e.target.style.background = theme.accentSoft}>
+          <label htmlFor="file-input" className="flex items-center justify-center w-10 h-10 rounded-lg transition cursor-pointer" style={{ background: theme.accentSoft, border: `1px solid ${theme.borderAccent}`, color: theme.accent }}>
             <Paperclip size={14} />
           </label>
-          <input id="file-input" type="file" multiple onChange={(e) => onFileSelect(e.target.files)} style={{ display: 'none' }} />
-          <button onClick={onCommentSubmit} disabled={submitting || (!comment.trim() && (!selectedFiles || selectedFiles.length === 0))} className="flex items-center justify-center w-10 h-10 text-white rounded-lg transition flex-shrink-0" style={{ background: theme.accent, cursor: submitting || (!comment.trim() && (!selectedFiles || selectedFiles.length === 0)) ? 'not-allowed' : 'pointer', opacity: submitting || (!comment.trim() && (!selectedFiles || selectedFiles.length === 0)) ? 0.5 : 1 }} onMouseEnter={(e) => !submitting && (comment.trim() || (selectedFiles && selectedFiles.length > 0)) && (e.target.style.background = theme.accentHover)} onMouseLeave={(e) => !submitting && (comment.trim() || (selectedFiles && selectedFiles.length > 0)) && (e.target.style.background = theme.accent)}>
+          <input id="file-input" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip" onChange={(e) => onFileSelect(e.target.files)} style={{ display: 'none' }} />
+          <button onClick={onCommentSubmit} disabled={submitting || (!comment.trim() && (!selectedFiles || selectedFiles.length === 0))} className="flex items-center justify-center w-10 h-10 text-white rounded-lg transition flex-shrink-0" style={{ background: theme.accent, cursor: submitting || (!comment.trim() && (!selectedFiles || selectedFiles.length === 0)) ? 'not-allowed' : 'pointer', opacity: submitting || (!comment.trim() && (!selectedFiles || selectedFiles.length === 0)) ? 0.5 : 1 }}>
             <Send size={14} />
           </button>
         </div>
@@ -278,55 +235,30 @@ const CommentsSection = ({ comments, comment, onCommentChange, onCommentSubmit, 
   </div>
 )
 
-// Detail Info Sidebar
 const DetailInfoSidebar = ({ ticket, currentUser, agents, onAssign, assigning, onStatusChange, theme }) => (
   <div className="flex flex-col gap-4">
-    {/* Info Card */}
     <div className="rounded-xl p-5 flex flex-col gap-3.5" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
       <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Detail Tiket</span>
       <div className="grid grid-cols-1 gap-3.5">
         <InfoRow label="Reporter" theme={theme}>
-          <span className="flex items-center gap-1.5">
-            <User size={14} style={{ color: theme.textMuted }} />
-            {ticket.requester?.name ?? ticket.user ?? '—'}
-          </span>
+          <span className="flex items-center gap-1.5"><User size={14} style={{ color: theme.textMuted }} />{ticket.requester?.name ?? ticket.user ?? '—'}</span>
         </InfoRow>
-        <InfoRow label="Departemen" theme={theme}>
-          {ticket.requester?.department ?? ticket.dept ?? '—'}
-        </InfoRow>
+        <InfoRow label="Departemen" theme={theme}>{ticket.requester?.department ?? ticket.dept ?? '—'}</InfoRow>
         <InfoRow label="Assigned To" theme={theme}>
           <span className="flex items-center gap-1.5">
             <UserCheck size={14} style={{ color: theme.textMuted }} />
-            {ticket.assignee?.name ? (
-              <span style={{ color: theme.warning, fontWeight: 500 }}>{ticket.assignee.name}</span>
-            ) : (
-              <span className="italic text-xs" style={{ color: theme.textMuted }}>Belum di-assign</span>
-            )}
+            {ticket.assignee?.name ? <span style={{ color: theme.warning, fontWeight: 500 }}>{ticket.assignee.name}</span> : <span className="italic text-xs" style={{ color: theme.textMuted }}>Belum di-assign</span>}
           </span>
         </InfoRow>
         <InfoRow label="Kategori" theme={theme}>
-          <span className="flex items-center gap-1.5">
-            <Layers size={14} style={{ color: theme.textMuted }} />
-            {ticket.category ?? '—'}
-          </span>
+          <span className="flex items-center gap-1.5"><Layers size={14} style={{ color: theme.textMuted }} />{ticket.category ?? '—'}</span>
         </InfoRow>
-        <InfoRow label="Prioritas" theme={theme}>
-          <Badge label={ticket.priority} cfg={PRIORITY_CFG[ticket.priority]} dot pulse={ticket.priority === 'Critical'} />
-        </InfoRow>
-        <InfoRow label="Status" theme={theme}>
-          <Badge label={ticket.status} cfg={STATUS_CFG[ticket.status]} />
-        </InfoRow>
+        <InfoRow label="Prioritas" theme={theme}><Badge label={ticket.priority} cfg={PRIORITY_CFG[ticket.priority]} dot pulse={ticket.priority === 'Critical'} /></InfoRow>
+        <InfoRow label="Status" theme={theme}><Badge label={ticket.status} cfg={STATUS_CFG[ticket.status]} /></InfoRow>
       </div>
       <div className="pt-3.5 border-t grid grid-cols-1 gap-3.5" style={{ borderColor: theme.border }}>
-        <InfoRow label="Dibuat" theme={theme}>
-          <span className="flex items-center gap-1.5">
-            <Clock size={14} style={{ color: theme.textMuted }} />
-            {fmt(ticket.created_at)}
-          </span>
-        </InfoRow>
-        <InfoRow label="Diperbarui" theme={theme}>
-          {fmt(ticket.updated_at)}
-        </InfoRow>
+        <InfoRow label="Dibuat" theme={theme}><span className="flex items-center gap-1.5"><Clock size={14} style={{ color: theme.textMuted }} />{fmt(ticket.created_at)}</span></InfoRow>
+        <InfoRow label="Diperbarui" theme={theme}>{fmt(ticket.updated_at)}</InfoRow>
         <InfoRow label="SLA Deadline" theme={theme}>
           <span className="font-mono text-xs" style={{ color: ticket.sla_deadline && new Date(ticket.sla_deadline) < new Date() ? theme.danger : theme.text }}>
             {fmt(ticket.sla_deadline ?? ticket.sla)}
@@ -334,14 +266,11 @@ const DetailInfoSidebar = ({ ticket, currentUser, agents, onAssign, assigning, o
         </InfoRow>
       </div>
     </div>
-
-    {/* Action Buttons */}
     <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
       <span className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: theme.textMuted }}>Aksi Cepat</span>
       {currentUser && ticket.assignee?.id !== currentUser.id && (
         <button onClick={() => onAssign(currentUser.id)} disabled={assigning} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg transition" style={{ border: `1px solid ${assigning ? theme.border : 'rgba(59,139,255,0.22)'}`, fontSize: 12, fontWeight: 500, color: assigning ? theme.textMuted : theme.accent, background: assigning ? 'transparent' : 'rgba(59,139,255,0.10)', cursor: assigning ? 'not-allowed' : 'pointer', opacity: assigning ? 0.5 : 1 }} onMouseEnter={(e) => !assigning && (e.target.style.background = 'rgba(59,139,255,0.15)')} onMouseLeave={(e) => !assigning && (e.target.style.background = 'rgba(59,139,255,0.10)')}>
-          <UserCheck size={14} />
-          Assign ke Saya
+          <UserCheck size={14} /> Assign ke Saya
         </button>
       )}
       <AssignDropdown agents={agents} current={ticket.assignee?.name ?? null} onAssign={onAssign} assigning={assigning} theme={theme} />
@@ -370,6 +299,9 @@ const TicketDetailPage = () => {
   const [assigning, setAssigning] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState(null)
   const [deletingCommentId, setDeletingCommentId] = useState(null)
+  const [resolveModal, setResolveModal] = useState(false)
+  const [resolutionNotes, setResolutionNotes] = useState('')
+  const [resolving, setResolving] = useState(false)
 
   const fetchTicket = async () => {
     setLoading(true); setError(null)
@@ -378,7 +310,14 @@ const TicketDetailPage = () => {
       if (!res.ok) throw new Error('Tiket tidak ditemukan.')
       const data = await res.json()
       setTicket(data)
-      setComments(data.comments ?? [])
+      // ✅ Fetch comments dengan attachments via endpoint terpisah
+      const cRes = await authFetch(`/api/tickets/${id}/comments`)
+      if (cRes.ok) {
+        const cData = await cRes.json()
+        setComments(cData)
+      } else {
+        setComments(data.comments ?? [])
+      }
     } catch (e) {
       setError(e.message)
     } finally {
@@ -405,101 +344,99 @@ const TicketDetailPage = () => {
       newFiles.splice(indexToRemove, 1)
       setSelectedFiles(newFiles.length > 0 ? newFiles : null)
     } else {
-      setSelectedFiles(files)
+      setSelectedFiles(files ? Array.from(files) : null)
     }
   }
 
-  // ✅ FIX: Proper FormData handling + extract comment from response
   const handleComment = async () => {
-  const bodyText = comment.trim()
-  if (!bodyText) return
+    const bodyText = comment.trim()
+    if (!bodyText && (!selectedFiles || selectedFiles.length === 0)) return
 
-  setSubmitting(true)
-  try {
-    const res = await authFetch(`/api/tickets/${id}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ body: bodyText })
-    })
-
-    if (!res.ok) {
-      const errData = await res.json()
-      throw new Error(errData.message || 'Gagal mengirim komentar.')
-    }
-    await fetchTicket()
-
-    // const data = await res.json()
-
-    // // ✅ samakan dengan versi atas
-    // setComments(prev => [...prev, data])
-
-    setComment('')
-    setSelectedFiles(null)
-  } catch (e) {
-    alert(e.message)
-  } finally {
-    setSubmitting(false)
-  }
-}
-
-  // ✅ FIX: Use PUT instead of PATCH
-  const handleStatusChange = async (status) => {
+    setSubmitting(true)
     try {
-      const res = await authFetch(`/api/tickets/${id}`, {
-        method: 'PUT',
+      const formData = new FormData()
+      if (bodyText) formData.append('body', bodyText)
+      if (selectedFiles && selectedFiles.length > 0) {
+        selectedFiles.forEach(file => formData.append('attachments[]', file))
+      }
+
+      const res = await authFetch(`/api/tickets/${id}/comments`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.message || 'Gagal mengirim komentar.')
+      }
+
+      const data = await res.json()
+
+      // ✅ Tambah komentar baru langsung ke state (sudah ada attachments dari response)
+      setComments(prev => [data.comment, ...prev])
+      setComment('')
+      setSelectedFiles(null)
+      const fileInput = document.getElementById('file-input')
+      if (fileInput) fileInput.value = ''
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleStatusChange = async (status) => {
+    if (status === 'Resolved') { setResolveModal(true); return }
+    try {
+      const isPost = status === 'Open' || status === 'Closed'
+      const endpoint = status === 'Open' ? `/api/tickets/${id}/reopen` : status === 'Closed' ? `/api/tickets/${id}/close` : `/api/tickets/${id}`
+      const res = await authFetch(endpoint, {
+        method: isPost ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        ...(isPost ? {} : { body: JSON.stringify({ status }) }),
       })
       if (!res.ok) throw new Error('Gagal mengubah status.')
       await fetchTicket()
-    } catch (e) {
-      alert(e.message)
-    }
+    } catch (e) { alert(e.message) }
+  }
+
+  const handleResolve = async () => {
+    if (resolutionNotes.trim().length < 10) { alert('Catatan resolusi minimal 10 karakter.'); return }
+    setResolving(true)
+    try {
+      const res = await authFetch(`/api/tickets/${id}/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolution_notes: resolutionNotes.trim() }),
+      })
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Gagal menyelesaikan tiket.') }
+      setResolveModal(false); setResolutionNotes('')
+      await fetchTicket()
+    } catch (e) { alert(e.message) } finally { setResolving(false) }
   }
 
   const handleAssign = async (agentId) => {
     setAssigning(true)
     try {
       if (agentId === null) {
-        const res = await authFetch(`/api/tickets/${id}`, { 
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ assigned_to: null }) 
-        })
+        const res = await authFetch(`/api/tickets/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: null }) })
         if (!res.ok) throw new Error('Gagal menghapus assignment.')
       } else {
-        const res = await authFetch(`/api/tickets/${id}/assign`, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ assigned_to: agentId })
-        })
+        const res = await authFetch(`/api/tickets/${id}/assign`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigned_to: agentId }) })
         if (!res.ok) throw new Error('Gagal mengassign tiket.')
       }
       await fetchTicket()
-    } catch (e) {
-      alert(e.message)
-    } finally {
-      setAssigning(false)
-    }
+    } catch (e) { alert(e.message) } finally { setAssigning(false) }
   }
 
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm('Hapus komentar ini?')) return
     setDeletingCommentId(commentId)
     try {
-      const res = await authFetch(`/api/tickets/${id}/comments/${commentId}`, {
-        method: 'DELETE'
-      })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.message || 'Gagal menghapus komentar.')
-      }
+      const res = await authFetch(`/api/tickets/${id}/comments/${commentId}`, { method: 'DELETE' })
+      if (!res.ok) { const errData = await res.json(); throw new Error(errData.message || 'Gagal menghapus komentar.') }
       setComments(prev => prev.filter(c => c.id !== commentId))
-    } catch (e) {
-      alert(e.message)
-    } finally {
-      setDeletingCommentId(null)
-    }
+    } catch (e) { alert(e.message) } finally { setDeletingCommentId(null) }
   }
 
   if (loading) return (
@@ -522,45 +459,67 @@ const TicketDetailPage = () => {
     <div className="flex flex-col items-center justify-center h-[60vh] gap-3 px-4">
       <AlertCircle size={40} style={{ color: theme.danger }} />
       <p className="text-sm text-center" style={{ color: theme.danger }}>{error}</p>
-      <button onClick={() => navigate('/tickets')} className="px-4 py-2 rounded transition text-sm" style={{ background: theme.surfaceAlt, border: `1px solid ${theme.border}`, color: theme.textSub }} onMouseEnter={(e) => e.target.style.background = theme.surfaceHover} onMouseLeave={(e) => e.target.style.background = theme.surfaceAlt}>
-        ← Kembali ke Tickets
-      </button>
+      <button onClick={() => navigate('/tickets')} className="px-4 py-2 rounded transition text-sm" style={{ background: theme.surfaceAlt, border: `1px solid ${theme.border}`, color: theme.textSub }}>← Kembali ke Tickets</button>
     </div>
   )
 
   const t = ticket
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-5">
-      {/* ── Breadcrumb ── */}
-      <Breadcrumb navigate={navigate} ticket={t} onRefresh={fetchTicket} theme={theme} />
-      
-      {/* ── 8 Col + 4 Col Layout (Sidebar di kanan) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left: Ticket Title + Comments (8 col) */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
-          <TicketTitleCard ticket={t} theme={theme} />
-          <CommentsSection 
-            comments={comments} 
-            comment={comment} 
-            onCommentChange={(e) => setComment(e.target.value)} 
-            onCommentSubmit={handleComment} 
-            submitting={submitting} 
-            theme={theme} 
-            onFileSelect={handleFileSelect} 
-            selectedFiles={selectedFiles}
-            currentUser={currentUser}
-            onDeleteComment={handleDeleteComment}
-            deletingCommentId={deletingCommentId}
-          />
-        </div>
-
-        {/* Right: Actions & Details (4 col) */}
-        <div className="lg:col-span-4">
-          <DetailInfoSidebar ticket={t} currentUser={currentUser} agents={agents} onAssign={handleAssign} assigning={assigning} onStatusChange={handleStatusChange} theme={theme} />
+    <>
+      <div className="flex flex-col gap-4 sm:gap-5">
+        <Breadcrumb navigate={navigate} ticket={t} onRefresh={fetchTicket} theme={theme} />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-8 flex flex-col gap-4">
+            <TicketTitleCard ticket={t} theme={theme} />
+            <CommentsSection
+              comments={comments}
+              comment={comment}
+              onCommentChange={(e) => setComment(e.target.value)}
+              onCommentSubmit={handleComment}
+              submitting={submitting}
+              theme={theme}
+              onFileSelect={handleFileSelect}
+              selectedFiles={selectedFiles}
+              currentUser={currentUser}
+              onDeleteComment={handleDeleteComment}
+              deletingCommentId={deletingCommentId}
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <DetailInfoSidebar ticket={t} currentUser={currentUser} agents={agents} onAssign={handleAssign} assigning={assigning} onStatusChange={handleStatusChange} theme={theme} />
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Modal Resolve */}
+      {resolveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }} onClick={(e) => { if (e.target === e.currentTarget) { setResolveModal(false); setResolutionNotes('') } }}>
+          <div className="w-full max-w-md rounded-2xl p-6 flex flex-col gap-4" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={18} style={{ color: theme.success }} />
+                <h2 className="text-base font-semibold" style={{ color: theme.text }}>Tandai Resolved</h2>
+              </div>
+              <button onClick={() => { setResolveModal(false); setResolutionNotes('') }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <X size={16} style={{ color: theme.textMuted }} />
+              </button>
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: theme.textSub }}>Jelaskan bagaimana tiket ini diselesaikan. Catatan ini akan terlihat oleh requester.</p>
+            <textarea value={resolutionNotes} onChange={e => setResolutionNotes(e.target.value)} placeholder="Contoh: Sudah dilakukan reinstall driver VGA, blue screen tidak muncul lagi setelah restart..." rows={4} className="rounded-lg px-3 py-2.5 text-sm resize-none outline-none" style={{ background: theme.surfaceAlt, border: `1px solid ${theme.border}`, color: theme.text }} onFocus={e => e.target.style.borderColor = theme.success} onBlur={e => e.target.style.borderColor = theme.border} />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px]" style={{ color: resolutionNotes.trim().length < 10 ? theme.danger : theme.textMuted }}>{resolutionNotes.trim().length}/10 karakter minimum</span>
+              <div className="flex gap-2">
+                <button onClick={() => { setResolveModal(false); setResolutionNotes('') }} className="px-4 py-2 rounded-lg text-sm" style={{ background: theme.surfaceAlt, border: `1px solid ${theme.border}`, color: theme.textSub, cursor: 'pointer' }}>Batal</button>
+                <button onClick={handleResolve} disabled={resolving || resolutionNotes.trim().length < 10} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ background: resolving || resolutionNotes.trim().length < 10 ? theme.surfaceAlt : 'rgba(16,185,129,0.15)', border: `1px solid ${resolving || resolutionNotes.trim().length < 10 ? theme.border : 'rgba(16,185,129,0.4)'}`, color: resolving || resolutionNotes.trim().length < 10 ? theme.textMuted : theme.success, cursor: resolving || resolutionNotes.trim().length < 10 ? 'not-allowed' : 'pointer' }}>
+                  {resolving ? 'Menyimpan...' : 'Tandai Resolved'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
