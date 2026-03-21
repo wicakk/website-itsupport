@@ -77,6 +77,16 @@ const EMPTY_TICKET = { title: '', category: '', priority: 'Medium', description:
 const MAX_FILES    = 5
 const MAX_MB       = 10
 
+// ── [TAMBAHAN] Konstanta untuk hardware ──────────────────────
+const ASSET_KATEGORI_OPTIONS = ['Laptop', 'Desktop', 'Printer', 'Monitor', 'Server', 'UPS', 'Switch', 'Other']
+const ASSET_STATUS_OPTIONS   = ['Active', 'Inactive', 'Under Repair', 'Disposed']
+const EMPTY_HARDWARE = {
+  nama_aset: '', asset_kategori: 'Laptop', asset_status: 'Active',
+  brand: '', model: '', serial_number: '', lokasi: '',
+  pengguna: '', tgl_beli: '', harga_beli: '', garansi_sd: '', catatan: '',
+}
+// ─────────────────────────────────────────────────────────────
+
 const fileIcon = (file) => {
   if (file.type.startsWith('image/')) return <ImageIcon size={14} color="#3B8BFF" />
   if (file.type === 'application/pdf') return <FileText size={14} color="#EF4444" />
@@ -98,6 +108,12 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
   const [errors, setErrors]       = useState({})
   const [dragOver, setDragOver]   = useState(false)
   const fileInputRef              = useRef(null)
+
+  // ── [TAMBAHAN] State hardware ─────────────────────────────
+  const [hardware, setHardware] = useState(EMPTY_HARDWARE)
+  const isHardware = form.category === 'Hardware'
+  const setHw = (k) => (e) => setHardware(h => ({ ...h, [k]: e.target.value }))
+  // ─────────────────────────────────────────────────────────
 
   // Set default kategori setelah kategori selesai di-load
   useEffect(() => {
@@ -150,6 +166,28 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
       fd.append('priority', form.priority)
       fd.append('description', form.description)
       files.forEach(f => fd.append('attachments[]', f))
+
+      // ── [TAMBAHAN] Append hardware fields jika kategori Hardware ──
+      if (isHardware) {
+        const hw = {
+          nama_aset:     hardware.nama_aset,
+          kategori:      hardware.asset_kategori,
+          status:        hardware.asset_status,
+          brand:         hardware.brand,
+          model:         hardware.model,
+          serial_number: hardware.serial_number,
+          lokasi:        hardware.lokasi,
+          pengguna:      hardware.pengguna   || null,
+          tgl_beli:      hardware.tgl_beli   || null,
+          harga_beli:    hardware.harga_beli ? Number(hardware.harga_beli) : null,
+          garansi_sd:    hardware.garansi_sd || null,
+          catatan:       hardware.catatan    || null,
+        }
+        Object.entries(hw).forEach(([k, v]) => {
+          if (v !== null && v !== '') fd.append(`hardware[${k}]`, v)
+        })
+      }
+      // ─────────────────────────────────────────────────────────────
 
       // ⚠️ JANGAN set Content-Type header — biarkan browser handle boundary
       const res = await authFetch('/api/tickets', {
@@ -242,6 +280,104 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
               placeholder="Jelaskan masalah secara detail..." value={form.description} onChange={set('description')} />
             {errors.description && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{errors.description}</p>}
           </div>
+
+          {/* ── [TAMBAHAN] Hardware Section ───────────────────────────────── */}
+          {isHardware && (
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 12,
+              border: `1.5px solid ${theme.borderAccent ?? '#3b82f633'}`,
+              borderRadius: 10, padding: 16,
+              background: theme.accentSoft ?? 'rgba(59,130,246,0.04)',
+              animation: 'hwSlideDown 0.22s ease',
+            }}>
+              {/* Header section */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={theme.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                </svg>
+                <span style={{ fontSize: 10, fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Informasi Aset Hardware
+                </span>
+              </div>
+
+              {/* Nama Aset */}
+              <div>
+                <label style={labelStyle}>Nama Aset</label>
+                <input style={inputStyle} value={hardware.nama_aset} onChange={setHw('nama_aset')} placeholder="cth: Dell Latitude 5420" />
+              </div>
+
+              {/* Kategori Aset + Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Kategori Aset</label>
+                  <select style={inputStyle} value={hardware.asset_kategori} onChange={setHw('asset_kategori')}>
+                    {ASSET_KATEGORI_OPTIONS.map(k => <option key={k}>{k}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Status</label>
+                  <select style={inputStyle} value={hardware.asset_status} onChange={setHw('asset_status')}>
+                    {ASSET_STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Brand + Model */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Brand</label>
+                  <input style={inputStyle} value={hardware.brand} onChange={setHw('brand')} placeholder="Dell" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Model</label>
+                  <input style={inputStyle} value={hardware.model} onChange={setHw('model')} placeholder="Latitude 5420" />
+                </div>
+              </div>
+
+              {/* Serial Number + Lokasi */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Serial Number</label>
+                  <input style={inputStyle} value={hardware.serial_number} onChange={setHw('serial_number')} placeholder="SN-XXXXXXXX" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Lokasi</label>
+                  <input style={inputStyle} value={hardware.lokasi} onChange={setHw('lokasi')} placeholder="Ruang IT Lt. 2" />
+                </div>
+              </div>
+
+              {/* Pengguna + Tgl Beli */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Pengguna <span style={{ color: theme.textDim, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opsional)</span></label>
+                  <input style={inputStyle} value={hardware.pengguna} onChange={setHw('pengguna')} placeholder="(opsional)" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Tgl Beli</label>
+                  <input style={inputStyle} type="date" value={hardware.tgl_beli} onChange={setHw('tgl_beli')} />
+                </div>
+              </div>
+
+              {/* Harga Beli */}
+              <div>
+                <label style={labelStyle}>Harga Beli (Rp)</label>
+                <input style={inputStyle} type="number" min="0" value={hardware.harga_beli} onChange={setHw('harga_beli')} placeholder="15000000" />
+              </div>
+
+              {/* Garansi S/D */}
+              <div>
+                <label style={labelStyle}>Garansi S/D</label>
+                <input style={inputStyle} type="date" value={hardware.garansi_sd} onChange={setHw('garansi_sd')} />
+              </div>
+
+              {/* Catatan */}
+              <div>
+                <label style={labelStyle}>Catatan <span style={{ color: theme.textDim, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opsional)</span></label>
+                <input style={inputStyle} value={hardware.catatan} onChange={setHw('catatan')} placeholder="(opsional)" />
+              </div>
+            </div>
+          )}
+          {/* ── [END TAMBAHAN] ────────────────────────────────────────────── */}
 
           {/* Upload */}
           <div>
@@ -476,7 +612,11 @@ const TicketsPage = () => {
         <Pagination currentPage={currentPage} lastPage={lastPage} total={total} perPage={PER_PAGE} onPageChange={handlePageChange} loading={loading} theme={theme} />
       </div>
 
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}} @keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes hwSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+      `}</style>
 
       {showNew && <NewTicketModal theme={theme} onClose={() => setShowNew(false)} onSubmit={() => { setShowNew(false); fetchTickets(1) }} />}
     </div>

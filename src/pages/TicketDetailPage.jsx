@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, RefreshCw, Clock, User, Layers, AlertCircle, MessageSquare, Send, CheckCircle2, UserCheck, RotateCcw, XCircle, Paperclip, UserPlus, ChevronDown, Check, Search, X, Trash2 } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Clock, User, Layers, AlertCircle, MessageSquare, Send, CheckCircle2, UserCheck, RotateCcw, XCircle, Paperclip, UserPlus, ChevronDown, Check, Search, X, Trash2, Monitor } from 'lucide-react'
 import { useAuth } from '../context/AppContext'
 import { useTheme } from '../context/ThemeContext'
 import { Badge } from '../components/ui'
 import { PRIORITY_CFG, STATUS_CFG, getTheme } from '../theme'
 
 const fmt = (iso) => !iso ? '—' : new Date(iso).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+const fmtDate = (val) => !val ? '—' : new Date(val).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+const fmtRp = (val) => !val ? '—' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
 
 const fileUrl = (a) => a?.url || (a?.path ? `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/storage/${a.path}` : null)
 
@@ -128,6 +130,68 @@ const TicketTitleCard = ({ ticket, theme }) => (
         })}
       </div>
     )}
+
+    {/* ── [TAMBAHAN] Hardware Asset Card ── */}
+    {ticket.category === 'Hardware' && ticket.hardware_asset && (
+      <div style={{
+        borderTop: `1px solid ${theme.border}`,
+        paddingTop: 14, marginTop: 2,
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Monitor size={13} style={{ color: theme.accent }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Informasi Aset Hardware
+          </span>
+        </div>
+
+        {/* Grid info */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px 20px' }}>
+          {[
+            { label: 'Nama Aset',      value: ticket.hardware_asset.nama_aset },
+            { label: 'Kategori Aset',  value: ticket.hardware_asset.kategori },
+            { label: 'Brand',          value: ticket.hardware_asset.brand },
+            { label: 'Model',          value: ticket.hardware_asset.model },
+            { label: 'Serial Number',  value: ticket.hardware_asset.serial_number },
+            { label: 'Lokasi',         value: ticket.hardware_asset.lokasi },
+            { label: 'Pengguna',       value: ticket.hardware_asset.pengguna },
+            { label: 'Tgl Beli',       value: fmtDate(ticket.hardware_asset.tgl_beli) },
+            { label: 'Harga Beli',     value: fmtRp(ticket.hardware_asset.harga_beli) },
+            { label: 'Garansi S/D',    value: fmtDate(ticket.hardware_asset.garansi_sd) },
+          ].map(({ label, value }) => value && value !== '—' ? (
+            <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: theme.textMuted }}>{label}</span>
+              <span style={{ fontSize: 13, color: theme.text }}>{value}</span>
+            </div>
+          ) : null)}
+        </div>
+
+        {/* Status badge */}
+        {ticket.hardware_asset.status && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: theme.textMuted }}>Status Aset</span>
+            <span style={{
+              fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 99,
+              background: ticket.hardware_asset.status === 'Active' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.10)',
+              color: ticket.hardware_asset.status === 'Active' ? theme.success : theme.danger,
+              border: `1px solid ${ticket.hardware_asset.status === 'Active' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
+            }}>
+              {ticket.hardware_asset.status}
+            </span>
+          </div>
+        )}
+
+        {/* Catatan */}
+        {ticket.hardware_asset.catatan && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: theme.textMuted }}>Catatan</span>
+            <p style={{ fontSize: 13, color: theme.text, margin: 0 }}>{ticket.hardware_asset.catatan}</p>
+          </div>
+        )}
+      </div>
+    )}
+    {/* ── [END TAMBAHAN] ── */}
   </div>
 )
 
@@ -265,7 +329,47 @@ const DetailInfoSidebar = ({ ticket, currentUser, agents, onAssign, assigning, o
           </span>
         </InfoRow>
       </div>
+
+      {/* ── [TAMBAHAN] Hardware asset ringkasan di sidebar ── */}
+      {ticket.category === 'Hardware' && ticket.hardware_asset && (
+        <div className="pt-3.5 border-t flex flex-col gap-3" style={{ borderColor: theme.border }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Monitor size={12} style={{ color: theme.accent }} />
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: theme.accent }}>Aset Hardware</span>
+          </div>
+          {ticket.hardware_asset.nama_aset && (
+            <InfoRow label="Nama Aset" theme={theme}>{ticket.hardware_asset.nama_aset}</InfoRow>
+          )}
+          {ticket.hardware_asset.serial_number && (
+            <InfoRow label="Serial Number" theme={theme}>
+              <span className="font-mono text-xs">{ticket.hardware_asset.serial_number}</span>
+            </InfoRow>
+          )}
+          {ticket.hardware_asset.brand && ticket.hardware_asset.model && (
+            <InfoRow label="Brand / Model" theme={theme}>
+              {ticket.hardware_asset.brand} {ticket.hardware_asset.model}
+            </InfoRow>
+          )}
+          {ticket.hardware_asset.lokasi && (
+            <InfoRow label="Lokasi" theme={theme}>{ticket.hardware_asset.lokasi}</InfoRow>
+          )}
+          {ticket.hardware_asset.status && (
+            <InfoRow label="Status Aset" theme={theme}>
+              <span style={{
+                fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 99, display: 'inline-block',
+                background: ticket.hardware_asset.status === 'Active' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.10)',
+                color: ticket.hardware_asset.status === 'Active' ? theme.success : theme.danger,
+                border: `1px solid ${ticket.hardware_asset.status === 'Active' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
+              }}>
+                {ticket.hardware_asset.status}
+              </span>
+            </InfoRow>
+          )}
+        </div>
+      )}
+      {/* ── [END TAMBAHAN] ── */}
     </div>
+
     <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
       <span className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: theme.textMuted }}>Aksi Cepat</span>
       {currentUser && ticket.assignee?.id !== currentUser.id && (
