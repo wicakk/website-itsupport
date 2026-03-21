@@ -2,7 +2,7 @@
 import {
   LayoutDashboard, Ticket, Package, BookOpen,
   Activity, BarChart3, Users, Settings,
-  Shield, Maximize2, LogOut, Kanban, BookMarked
+  Shield, Maximize2, LogOut, Kanban, BookMarked, MapPin
 } from 'lucide-react'
 import { Avatar } from '../ui'
 import { useApp, useAuth } from '../../context/AppContext'
@@ -10,20 +10,22 @@ import { useTheme } from '../../context/ThemeContext'
 import { usePermission } from '../../context/PermissionContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 
-const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Kanban, BookMarked }
+const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Kanban, BookMarked, MapPin }
 
 const NAV_ITEMS = [
-  { id: 'dashboard',  label: 'Dashboard',       iconName: 'LayoutDashboard' },
-  { id: 'tickets',    label: 'Tiket',            iconName: 'Ticket'          },
-  { id: 'projects',   label: 'Projects',         iconName: 'Kanban'          },
-  { id: 'assets',     label: 'Asset Management', iconName: 'Package'         },
-  { id: 'knowledge',  label: 'Knowledge Base',   iconName: 'BookOpen'        },
-  { id: 'monitoring', label: 'Monitoring',       iconName: 'Activity'        },
-  { id: 'reports',    label: 'Reports',          iconName: 'BarChart3'       },
-  { id: 'users',      label: 'User Management',  iconName: 'Users'           },
-  { id: 'roles',      label: 'Role Management',    iconName: 'Shield'       },
-  { id: 'master',     label: 'Master Category',        iconName: 'BookMarked'   },
-  { id: 'settings',   label: 'Settings',           iconName: 'Settings'     },
+  { id: 'dashboard',         label: 'Dashboard',        iconName: 'LayoutDashboard' },
+  { id: 'tickets',           label: 'Tiket',             iconName: 'Ticket'          },
+  { id: 'projects',          label: 'Projects',          iconName: 'Kanban'          },
+  { id: 'assets',            label: 'Asset Management',  iconName: 'Package'         },
+  { id: 'knowledge',         label: 'Knowledge Base',    iconName: 'BookOpen'        },
+  { id: 'monitoring',        label: 'Monitoring',        iconName: 'Activity'        },
+  { id: 'reports',           label: 'Reports',           iconName: 'BarChart3'       },
+  { id: 'users',             label: 'User Management',   iconName: 'Users'           },
+  { id: 'roles',             label: 'Role Management',   iconName: 'Shield'          },
+  { id: 'master',            label: 'Master Category',   iconName: 'BookMarked'      },
+  // ── [TAMBAHAN] Master Lokasi ──
+  { id: 'master/locations',  label: 'Master Lokasi',     iconName: 'MapPin'          },
+  { id: 'settings',          label: 'Settings',          iconName: 'Settings'        },
 ]
 
 const NavItem = ({ item, active, collapsed, onClick }) => {
@@ -46,9 +48,18 @@ const Sidebar = () => {
   const { sidebarCollapsed, setSidebarCollapsed } = useApp()
   const { user, logout } = useAuth()
   const { T, isDark } = useTheme()
-  const { canAccessNav } = usePermission()   // ← data dari API, reaktif
+  const { canAccessNav } = usePermission()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // ── [TAMBAHAN] active check pakai startsWith agar /master/locations
+  // tidak ikut aktif saat di /master, dan sebaliknya
+  const isActive = (itemId) => {
+    const path = location.pathname
+    if (itemId === 'master/locations') return path === '/master/locations'
+    if (itemId === 'master')           return path === '/master'
+    return path === `/${itemId}` || path.startsWith(`/${itemId}/`)
+  }
 
   return (
     <aside style={{ width: sidebarCollapsed ? 64 : 224, background: T.surface, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', transition: 'width 0.3s ease', flexShrink: 0, overflow: 'hidden' }}>
@@ -65,12 +76,18 @@ const Sidebar = () => {
         )}
       </div>
 
-      {/* Navigation — filter pakai canAccessNav dari API */}
+      {/* Navigation */}
       <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', scrollbarWidth: 'thin' }}>
         {NAV_ITEMS
           .filter(item => canAccessNav(item.id))
           .map(item => (
-            <NavItem key={item.id} item={item} active={location.pathname === `/${item.id}`} collapsed={sidebarCollapsed} onClick={id => navigate(`/${id}`)} />
+            <NavItem
+              key={item.id}
+              item={item}
+              active={isActive(item.id)}
+              collapsed={sidebarCollapsed}
+              onClick={id => navigate(`/${id}`)}
+            />
           ))}
       </nav>
 

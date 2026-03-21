@@ -96,6 +96,16 @@ export const ALL_PERMISSIONS = [
       { key: 'roles.edit',   label: 'Edit Permissions Role' },
     ],
   },
+  // ── [TAMBAHAN] Master Data ────────────────────────────────────
+  {
+    group: 'Master Data',
+    key: 'master',
+    items: [
+      { key: 'master.view',              label: 'Lihat Master Data' },
+      { key: 'master.categories',        label: 'Master Category' },
+      { key: 'master.locations',         label: 'Master Lokasi' },
+    ],
+  },
 ]
 
 // Default permissions per role (bisa diedit di RolesPage)
@@ -112,6 +122,8 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     'reports.view', 'reports.export',
     'users.view', 'users.create', 'users.edit',
     'roles.view',
+    // ── [TAMBAHAN] ──
+    'master.view', 'master.categories', 'master.locations',
   ],
 
   it_support: [

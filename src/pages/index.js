@@ -7,8 +7,9 @@ export { default as MonitoringPage } from './MonitoringPage'
 export { default as ReportsPage }    from './ReportsPage'
 export { default as UsersPage }      from './UsersPage'
 export { default as SettingsPage }   from './SettingsPage'
-export { default as RolesPage }      from './RolesPage'   // ← baru
-export { default as MasterCategoriesPage }      from './MasterCategoriesPage'   // ← baru
+export { default as RolesPage }      from './RolesPage'  
+export { default as MasterCategoriesPage }      from './MasterCategoriesPage'   
+export { default as MasterLocationsPage }      from './MasterLocationsPage'  
 
 // Detail Pages
 export { default as TicketDetailPage }    from './TicketDetailPage'

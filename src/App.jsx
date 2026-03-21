@@ -9,12 +9,12 @@ import CanAccess from './components/ui/CanAccess'
 import {
   DashboardPage, TicketsPage, AssetsPage, KnowledgePage,
   MonitoringPage, ReportsPage, UsersPage, SettingsPage,
-  TicketDetailPage, AssetDetailPage, KnowledgeDetailPage,
+  TicketDetailPage, AssetDetailPage, KnowledgeDetailPage, MasterLocationsPage
 } from './pages'
 import RolesPage             from './pages/RolesPage'
 import MasterCategoriesPage  from './pages/MasterCategoriesPage'
-import ProjectsPage     from './pages/ProjectsPage'
-import ProjectDetailPage from './pages/ProjectDetailPage'
+import ProjectsPage          from './pages/ProjectsPage'
+import ProjectDetailPage     from './pages/ProjectDetailPage'
 
 function ProtectedRoutes() {
   const { user } = useAuth()
@@ -22,22 +22,24 @@ function ProtectedRoutes() {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/dashboard"     element={<CanAccess permission="dashboard.view"  redirect="/settings"><DashboardPage /></CanAccess>} />
-        <Route path="/tickets"       element={<CanAccess permission="tickets.view"    redirect="/dashboard"><TicketsPage /></CanAccess>} />
-        <Route path="/tickets/:id"   element={<CanAccess permission="tickets.view"    redirect="/dashboard"><TicketDetailPage /></CanAccess>} />
-        <Route path="/projects"      element={<ProjectsPage />} />
-        <Route path="/projects/:id"  element={<ProjectDetailPage />} />
-        <Route path="/assets"        element={<CanAccess permission="assets.view"     redirect="/dashboard"><AssetsPage /></CanAccess>} />
-        <Route path="/assets/:id"    element={<CanAccess permission="assets.view"     redirect="/dashboard"><AssetDetailPage /></CanAccess>} />
-        <Route path="/knowledge"     element={<CanAccess permission="knowledge.view"  redirect="/dashboard"><KnowledgePage /></CanAccess>} />
-        <Route path="/knowledge/:id" element={<CanAccess permission="knowledge.view"  redirect="/dashboard"><KnowledgeDetailPage /></CanAccess>} />
-        <Route path="/monitoring"    element={<CanAccess permission="monitoring.view" redirect="/dashboard"><MonitoringPage /></CanAccess>} />
-        <Route path="/reports"       element={<CanAccess permission="reports.view"    redirect="/dashboard"><ReportsPage /></CanAccess>} />
-        <Route path="/users"         element={<CanAccess permission="users.view"      redirect="/dashboard"><UsersPage /></CanAccess>} />
-        <Route path="/roles"         element={<CanAccess role="super_admin"                            redirect="/dashboard"><RolesPage /></CanAccess>} />
-        <Route path="/master"        element={<CanAccess role={['super_admin','manager_it']}          redirect="/dashboard"><MasterCategoriesPage /></CanAccess>} />
-        <Route path="/settings"      element={<SettingsPage />} />
-        <Route path="*"              element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard"          element={<CanAccess permission="dashboard.view"            redirect="/settings"><DashboardPage /></CanAccess>} />
+        <Route path="/tickets"            element={<CanAccess permission="tickets.view"              redirect="/dashboard"><TicketsPage /></CanAccess>} />
+        <Route path="/tickets/:id"        element={<CanAccess permission="tickets.view"              redirect="/dashboard"><TicketDetailPage /></CanAccess>} />
+        <Route path="/projects"           element={<ProjectsPage />} />
+        <Route path="/projects/:id"       element={<ProjectDetailPage />} />
+        <Route path="/assets"             element={<CanAccess permission="assets.view"               redirect="/dashboard"><AssetsPage /></CanAccess>} />
+        <Route path="/assets/:id"         element={<CanAccess permission="assets.view"               redirect="/dashboard"><AssetDetailPage /></CanAccess>} />
+        <Route path="/knowledge"          element={<CanAccess permission="knowledge.view"            redirect="/dashboard"><KnowledgePage /></CanAccess>} />
+        <Route path="/knowledge/:id"      element={<CanAccess permission="knowledge.view"            redirect="/dashboard"><KnowledgeDetailPage /></CanAccess>} />
+        <Route path="/monitoring"         element={<CanAccess permission="monitoring.view"           redirect="/dashboard"><MonitoringPage /></CanAccess>} />
+        <Route path="/reports"            element={<CanAccess permission="reports.view"              redirect="/dashboard"><ReportsPage /></CanAccess>} />
+        <Route path="/users"              element={<CanAccess permission="users.view"                redirect="/dashboard"><UsersPage /></CanAccess>} />
+        <Route path="/roles"              element={<CanAccess role="super_admin"                     redirect="/dashboard"><RolesPage /></CanAccess>} />
+        <Route path="/master"             element={<CanAccess role={['super_admin','manager_it']}    redirect="/dashboard"><MasterCategoriesPage /></CanAccess>} />
+        {/* ── [TAMBAHAN] Route Master Lokasi ── */}
+        <Route path="/master/locations"   element={<CanAccess role={['super_admin','manager_it']}    redirect="/dashboard"><MasterLocationsPage /></CanAccess>} />
+        <Route path="/settings"           element={<SettingsPage />} />
+        <Route path="*"                   element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AppLayout>
   )

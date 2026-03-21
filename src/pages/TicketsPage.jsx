@@ -99,6 +99,16 @@ const formatBytes = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+// ── [TAMBAHAN] Format SLA: "22 Mar 2026  12:38" (tanpa T dan Z) ──
+const fmtSla = (iso) => {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d)) return iso
+  const tgl  = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+  const jam  = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  return `${tgl}  ${jam}`
+}
+
 const NewTicketModal = ({ onClose, onSubmit, theme }) => {
   const { authFetch }             = useAuth()
   const { categoryNames, loading: catLoading } = useTicketCategories()
@@ -591,7 +601,7 @@ const TicketsPage = () => {
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}><Badge label={t.priority} cfg={PRIORITY_CFG[t.priority]} dot pulse={t.priority === 'Critical'} /></td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}><Badge label={t.status} cfg={STATUS_CFG[t.status]} /></td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: theme.textMuted, whiteSpace: 'nowrap' }}>{t.assignee?.name ?? 'Unassigned'}</td>
-                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 11, color: theme.textMuted, whiteSpace: 'nowrap' }}>{t.sla_deadline ?? t.sla ?? '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 11, color: theme.textMuted, whiteSpace: 'nowrap' }}>{fmtSla(t.sla_deadline ?? t.sla)}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <button onClick={e => { e.stopPropagation(); navigate(`/tickets/${t.id}`) }}
                           style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: theme.accent, border: `1px solid ${theme.borderAccent}`, borderRadius: 6, background: theme.accentSoft, cursor: 'pointer', whiteSpace: 'nowrap' }}
