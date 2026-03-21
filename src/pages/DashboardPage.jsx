@@ -38,12 +38,19 @@ const Card = ({ children, theme, style = {} }) => (
 )
 
 // ── [TAMBAHAN] Project status config ──────────────────────────
+// Support backend lowercase (active/on_hold/completed/cancelled) + Title Case
 const PROJECT_STATUS_CFG = {
-  'Planning':     { color: '#94A3B8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)' },
-  'In Progress':  { color: '#3B8BFF', bg: 'rgba(59,139,255,0.12)',  border: 'rgba(59,139,255,0.25)'  },
-  'On Hold':      { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)'  },
-  'Completed':    { color: '#10B981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.25)'  },
-  'Cancelled':    { color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)'   },
+  // ── Backend values (lowercase) ──
+  'active':      { label: 'Aktif',       color: '#10B981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.25)'  },
+  'on_hold':     { label: 'Pending',     color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)'  },
+  'completed':   { label: 'Selesai',     color: '#6366f1', bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.25)'  },
+  'cancelled':   { label: 'Dibatalkan',  color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)'   },
+  // ── Fallback Title Case ──
+  'Planning':    { label: 'Planning',    color: '#94A3B8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)' },
+  'In Progress': { label: 'In Progress', color: '#3B8BFF', bg: 'rgba(59,139,255,0.12)',  border: 'rgba(59,139,255,0.25)'  },
+  'On Hold':     { label: 'Pending',     color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)'  },
+  'Completed':   { label: 'Selesai',     color: '#10B981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.25)'  },
+  'Cancelled':   { label: 'Dibatalkan',  color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)'   },
 }
 
 const fmtDate = (d) => !d ? '—' : new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -81,6 +88,8 @@ const ProjectCard = ({ project, onClick, theme }) => {
     && new Date(project.end_date) < new Date()
     && project.status !== 'Completed'
     && project.status !== 'completed'
+    && project.status !== 'cancelled'
+    && project.status !== 'Cancelled'
 
   return (
     <button onClick={onClick} style={{ textAlign: 'left', width: '100%', border: 'none', padding: 0, background: 'none', cursor: 'pointer', borderRadius: 12 }}>
@@ -93,7 +102,7 @@ const ProjectCard = ({ project, onClick, theme }) => {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <p style={{ color: theme.text, fontWeight: 600, fontSize: 13, margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</p>
           <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color, flexShrink: 0 }}>
-            {project.status}
+            {cfg.label ?? project.status}
           </span>
         </div>
 
@@ -179,7 +188,14 @@ const DashboardPage = () => {
         resolved: dash.stats?.resolved_tickets ?? 0,
         overdue:  dash.stats?.overdue_tickets  ?? 0,
       })
-      setMonthlyData(chart.monthly ?? [])
+      // Normalize ke field yang dipakai BarChart: o=open, r=resolved, m=label bulan
+      setMonthlyData(
+        (chart.monthly ?? []).map(d => ({
+          o: d.o ?? d.open         ?? d.open_count     ?? d.total_open     ?? 0,
+          r: d.r ?? d.resolved     ?? d.resolved_count ?? d.total_resolved ?? 0,
+          m: d.m ?? d.month        ?? d.month_label    ?? d.label          ?? '',
+        }))
+      )
       setCategoryDist(chart.category_distribution ?? [])
 
       const slaLabels = {
@@ -196,8 +212,19 @@ const DashboardPage = () => {
       setTechnicians(
         (dash.tech_performance ?? []).map(t => ({
           ...t,
-          resolved: t.resolved_count,
-          avg:      t.avg_resolution_hours ? `${t.avg_resolution_hours}h` : '—',
+          // Normalize field names dari berbagai kemungkinan response API
+          resolved:  t.resolved_count   ?? t.resolved    ?? t.total_resolved ?? 0,
+          avg:       t.avg_resolution_hours
+                       ? `${t.avg_resolution_hours}h`
+                       : t.avg_time
+                         ? t.avg_time
+                         : '—',
+          // SLA score — hitung dari tiket yg selesai dalam deadline / total resolved
+          sla_score: t.sla_score
+                       ?? t.sla
+                       ?? (t.resolved_count > 0 && t.sla_met_count != null
+                            ? Math.round((t.sla_met_count / t.resolved_count) * 100)
+                            : null),
         }))
       )
     } catch (e) {
@@ -251,9 +278,13 @@ const DashboardPage = () => {
   // ── [TAMBAHAN] Project summary stats ──
   const projectStats = {
     total:      projects.length,
-    inProgress: projects.filter(p => p.status === 'In Progress').length,
-    completed:  projects.filter(p => p.status === 'Completed').length,
-    overdue:    projects.filter(p => p.end_date && new Date(p.end_date) < new Date() && p.status !== 'Completed').length,
+    // Support backend lowercase + Title Case
+    inProgress: projects.filter(p => ['active','In Progress'].includes(p.status)).length,
+    completed:  projects.filter(p => ['completed','Completed'].includes(p.status)).length,
+    overdue:    projects.filter(p =>
+      p.end_date && new Date(p.end_date) < new Date() &&
+      !['completed','Completed','cancelled','Cancelled'].includes(p.status)
+    ).length,
   }
 
   return (
@@ -327,8 +358,27 @@ const DashboardPage = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {slaRows.map(s => (
                     <div key={s.label}>
-                      <p style={{ color: theme.textMuted, fontSize: 11, marginBottom: 6 }}>{s.label}</p>
-                      <ProgressBar value={s.value} theme={theme} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <p style={{ color: theme.textMuted, fontSize: 11, margin: 0 }}>{s.label}</p>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: s.value >= 80 ? theme.success : s.value >= 50 ? '#F59E0B' : theme.danger }}>
+                          {s.value}%
+                        </span>
+                      </div>
+                      {/* Progress bar manual agar value=0 tetap terlihat */}
+                      <div style={{ height: 6, borderRadius: 99, background: theme.border, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${s.value}%`,
+                          minWidth: s.value > 0 ? 6 : 0,
+                          borderRadius: 99,
+                          background: s.value >= 80
+                            ? 'linear-gradient(90deg, #10B981, #059669)'
+                            : s.value >= 50
+                              ? 'linear-gradient(90deg, #F59E0B, #D97706)'
+                              : 'linear-gradient(90deg, #EF4444, #DC2626)',
+                          transition: 'width 0.5s ease',
+                        }} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -394,7 +444,7 @@ const DashboardPage = () => {
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, textAlign: 'center' }}>
-                        {[[t.resolved ?? 0, 'Resolved', accent], [t.avg_time ?? t.avg ?? '—', 'Avg Time', '#F59E0B'], [`${t.sla_score ?? t.sla ?? 0}%`, 'SLA', '#10B981']].map(([v, l, c]) => (
+                        {[[t.resolved ?? 0, 'Resolved', accent], [t.avg ?? '—', 'Avg Time', '#F59E0B'], [t.sla_score != null ? `${t.sla_score}%` : '—', 'SLA', '#10B981']].map(([v, l, c]) => (
                           <div key={l} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 4px' }}>
                             <p style={{ color: c, fontWeight: 800, fontSize: 13, margin: 0 }}>{v}</p>
                             <p style={{ color: theme.textMuted, fontSize: 9, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{l}</p>
