@@ -162,7 +162,7 @@ const TicketTitleCard = ({ ticket, theme }) => (
           ].map(({ label, value }) => value && value !== '—' ? (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: theme.textMuted }}>{label}</span>
-              <span style={{ fontSize: 13, color: theme.text }}>{value}</span>
+              <span style={{ fontSize: 13, color: theme.text, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{value}</span>
             </div>
           ) : null)}
         </div>
@@ -186,7 +186,7 @@ const TicketTitleCard = ({ ticket, theme }) => (
         {ticket.hardware_asset.catatan && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: theme.textMuted }}>Catatan</span>
-            <p style={{ fontSize: 13, color: theme.text, margin: 0 }}>{ticket.hardware_asset.catatan}</p>
+            <p style={{ fontSize: 13, color: theme.text, margin: 0, wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>{ticket.hardware_asset.catatan}</p>
           </div>
         )}
       </div>

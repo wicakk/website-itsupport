@@ -2,7 +2,7 @@
 import {
   LayoutDashboard, Ticket, Package, BookOpen,
   Activity, BarChart3, Users, Settings,
-  Shield, Maximize2, LogOut, Kanban, BookMarked, MapPin
+  Shield, Maximize2, LogOut, Kanban, BookMarked, MapPin, Tag
 } from 'lucide-react'
 import { Avatar } from '../ui'
 import { useApp, useAuth } from '../../context/AppContext'
@@ -10,22 +10,23 @@ import { useTheme } from '../../context/ThemeContext'
 import { usePermission } from '../../context/PermissionContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 
-const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Kanban, BookMarked, MapPin }
+const ICONS = { LayoutDashboard, Ticket, Package, BookOpen, Activity, BarChart3, Users, Settings, Shield, Kanban, BookMarked, MapPin, Tag }
 
 const NAV_ITEMS = [
-  { id: 'dashboard',         label: 'Dashboard',        iconName: 'LayoutDashboard' },
-  { id: 'tickets',           label: 'Tiket',             iconName: 'Ticket'          },
-  { id: 'projects',          label: 'Projects',          iconName: 'Kanban'          },
-  { id: 'assets',            label: 'Asset Management',  iconName: 'Package'         },
-  { id: 'knowledge',         label: 'Knowledge Base',    iconName: 'BookOpen'        },
-  { id: 'monitoring',        label: 'Monitoring',        iconName: 'Activity'        },
-  { id: 'reports',           label: 'Reports',           iconName: 'BarChart3'       },
-  { id: 'users',             label: 'User Management',   iconName: 'Users'           },
-  { id: 'roles',             label: 'Role Management',   iconName: 'Shield'          },
-  { id: 'master',            label: 'Master Category',   iconName: 'BookMarked'      },
-  // ── [TAMBAHAN] Master Lokasi ──
-  { id: 'master/locations',  label: 'Master Lokasi',     iconName: 'MapPin'          },
-  { id: 'settings',          label: 'Settings',          iconName: 'Settings'        },
+  { id: 'dashboard',              label: 'Dashboard',              iconName: 'LayoutDashboard' },
+  { id: 'tickets',                label: 'Tiket',                  iconName: 'Ticket'          },
+  { id: 'projects',               label: 'Projects',               iconName: 'Kanban'          },
+  { id: 'assets',                 label: 'Asset Management',       iconName: 'Package'         },
+  { id: 'knowledge',              label: 'Knowledge Base',         iconName: 'BookOpen'        },
+  { id: 'monitoring',             label: 'Monitoring',             iconName: 'Activity'        },
+  { id: 'reports',                label: 'Reports',                iconName: 'BarChart3'       },
+  { id: 'users',                  label: 'User Management',        iconName: 'Users'           },
+  { id: 'roles',                  label: 'Role Management',        iconName: 'Shield'          },
+  { id: 'master',                 label: 'Master Category',        iconName: 'BookMarked'      },
+  { id: 'master/locations',       label: 'Master Lokasi',          iconName: 'MapPin'          },
+  // ── [TAMBAHAN] Master Kategori Aset ──
+  { id: 'master/asset-categories', label: 'Master Kategori Aset', iconName: 'Tag'             },
+  { id: 'settings',               label: 'Settings',              iconName: 'Settings'        },
 ]
 
 const NavItem = ({ item, active, collapsed, onClick }) => {
@@ -52,12 +53,12 @@ const Sidebar = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // ── [TAMBAHAN] active check pakai startsWith agar /master/locations
-  // tidak ikut aktif saat di /master, dan sebaliknya
+  // active check — setiap path /master/* harus exact match agar tidak saling aktif
   const isActive = (itemId) => {
     const path = location.pathname
-    if (itemId === 'master/locations') return path === '/master/locations'
-    if (itemId === 'master')           return path === '/master'
+    if (itemId === 'master/asset-categories') return path === '/master/asset-categories'
+    if (itemId === 'master/locations')        return path === '/master/locations'
+    if (itemId === 'master')                  return path === '/master'
     return path === `/${itemId}` || path.startsWith(`/${itemId}/`)
   }
 

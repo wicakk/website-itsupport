@@ -10,6 +10,8 @@ import { useTheme } from '../context/ThemeContext'
 import { Badge, PageHeader, FilterTabs, SearchBar, PrimaryButton, EmptyState } from '../components/ui'
 import { PRIORITY_CFG, STATUS_CFG } from '../theme'
 import useTicketCategories from '../hooks/useTicketCategories'
+import useAssetCategories  from '../hooks/useAssetCategories'
+import useLocations         from '../hooks/useLocations'
 
 // ─── Pagination ───────────────────────────────────────────────
 const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange, loading, theme }) => {
@@ -78,10 +80,11 @@ const MAX_FILES    = 5
 const MAX_MB       = 10
 
 // ── [TAMBAHAN] Konstanta untuk hardware ──────────────────────
-const ASSET_KATEGORI_OPTIONS = ['Laptop', 'Desktop', 'Printer', 'Monitor', 'Server', 'UPS', 'Switch', 'Other']
-const ASSET_STATUS_OPTIONS   = ['Active', 'Inactive', 'Under Repair', 'Disposed']
+// Fallback jika API belum return data
+const ASSET_KATEGORI_FALLBACK = ['Laptop', 'Desktop', 'Printer', 'Monitor', 'Server', 'UPS', 'Switch', 'Other']
+const ASSET_STATUS_OPTIONS    = ['Active', 'Inactive', 'Under Repair', 'Disposed']
 const EMPTY_HARDWARE = {
-  nama_aset: '', asset_kategori: 'Laptop', asset_status: 'Active',
+  nama_aset: '', asset_kategori: '', asset_status: 'Active',
   brand: '', model: '', serial_number: '', lokasi: '',
   pengguna: '', tgl_beli: '', harga_beli: '', garansi_sd: '', catatan: '',
 }
@@ -112,6 +115,10 @@ const fmtSla = (iso) => {
 const NewTicketModal = ({ onClose, onSubmit, theme }) => {
   const { authFetch }             = useAuth()
   const { categoryNames, loading: catLoading } = useTicketCategories()
+  // ── [TAMBAHAN] Hook untuk data dari master ──
+  const { categoryNames: assetCatNames, loading: assetCatLoading } = useAssetCategories()
+  const { locationNames, loading: locLoading }                     = useLocations()
+  // ───────────────────────────────────────────
   const [form, setForm]           = useState(EMPTY_TICKET)
   const [files, setFiles]         = useState([])
   const [saving, setSaving]       = useState(false)
@@ -123,6 +130,13 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
   const [hardware, setHardware] = useState(EMPTY_HARDWARE)
   const isHardware = form.category === 'Hardware'
   const setHw = (k) => (e) => setHardware(h => ({ ...h, [k]: e.target.value }))
+
+  // Set default kategori aset & lokasi setelah data API masuk
+  useEffect(() => {
+    if (assetCatNames.length > 0 && !hardware.asset_kategori) {
+      setHardware(h => ({ ...h, asset_kategori: assetCatNames[0] }))
+    }
+  }, [assetCatNames])
   // ─────────────────────────────────────────────────────────
 
   // Set default kategori setelah kategori selesai di-load
@@ -320,8 +334,11 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Kategori Aset</label>
-                  <select style={inputStyle} value={hardware.asset_kategori} onChange={setHw('asset_kategori')}>
-                    {ASSET_KATEGORI_OPTIONS.map(k => <option key={k}>{k}</option>)}
+                  <select style={inputStyle} value={hardware.asset_kategori} onChange={setHw('asset_kategori')} disabled={assetCatLoading}>
+                    {assetCatLoading
+                      ? <option>Memuat...</option>
+                      : (assetCatNames.length > 0 ? assetCatNames : ASSET_KATEGORI_FALLBACK).map(k => <option key={k}>{k}</option>)
+                    }
                   </select>
                 </div>
                 <div>
@@ -345,16 +362,22 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
               </div>
 
               {/* Serial Number + Lokasi */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              
                 <div>
                   <label style={labelStyle}>Serial Number</label>
                   <input style={inputStyle} value={hardware.serial_number} onChange={setHw('serial_number')} placeholder="SN-XXXXXXXX" />
                 </div>
                 <div>
                   <label style={labelStyle}>Lokasi</label>
-                  <input style={inputStyle} value={hardware.lokasi} onChange={setHw('lokasi')} placeholder="Ruang IT Lt. 2" />
+                  <select style={inputStyle} value={hardware.lokasi} onChange={setHw('lokasi')} disabled={locLoading}>
+                    <option value="">-- Pilih Lokasi --</option>
+                    {locLoading
+                      ? <option>Memuat...</option>
+                      : locationNames.map(l => <option key={l}>{l}</option>)
+                    }
+                  </select>
                 </div>
-              </div>
+              
 
               {/* Pengguna + Tgl Beli */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -383,7 +406,7 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
               {/* Catatan */}
               <div>
                 <label style={labelStyle}>Catatan <span style={{ color: theme.textDim, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opsional)</span></label>
-                <input style={inputStyle} value={hardware.catatan} onChange={setHw('catatan')} placeholder="(opsional)" />
+                <textarea style={inputStyle} value={hardware.catatan} onChange={setHw('catatan')} placeholder="(opsional)" />
               </div>
             </div>
           )}

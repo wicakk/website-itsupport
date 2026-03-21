@@ -6,16 +6,20 @@ import {
   Server, Monitor, Globe, User, Shield, QrCode, TrendingDown,
   CalendarClock, Download, Printer as PrintIcon, Calendar, Clock,
   Bell, CheckCheck, AlertCircle, BarChart3, ClipboardList, Plus,
-  Pencil, Trash2, X, AlertTriangle,
+  Pencil, Trash2, X, AlertTriangle, FileText,
 } from 'lucide-react'
 import { ASSET_STATUS_CFG } from '../theme'
 import { Badge } from '../components/ui'
 import { useAuth } from '../context/AppContext'
 import { useTheme } from '../context/ThemeContext'
+import useAssetCategories from '../hooks/useAssetCategories'
+import useLocations       from '../hooks/useLocations'
 
-const CATEGORIES   = ['Laptop', 'Desktop', 'Printer', 'Network', 'Server', 'Phone', 'Monitor', 'Others']
 const STATUSES     = ['Active', 'Maintenance', 'Inactive', 'Disposed']
 const PM_INTERVALS = ['Mingguan', 'Bulanan', '3 Bulan', '6 Bulan', 'Tahunan']
+
+// Fallback jika master API kosong
+const CATEGORIES_FALLBACK = ['Laptop', 'Desktop', 'Printer', 'Network', 'Server', 'Phone', 'Monitor', 'Others']
 
 const CAT_COLORS = {
   Laptop:  { color: '#60A5FA', bg: 'rgba(96,165,250,0.10)',  border: 'rgba(96,165,250,0.20)',  Icon: Laptop  },
@@ -25,17 +29,13 @@ const CAT_COLORS = {
   Server:  { color: '#FBBF24', bg: 'rgba(251,191,36,0.10)',  border: 'rgba(251,191,36,0.20)',  Icon: Server  },
   Phone:   { color: '#F472B6', bg: 'rgba(244,114,182,0.10)', border: 'rgba(244,114,182,0.20)', Icon: Package },
   Monitor: { color: '#2DD4BF', bg: 'rgba(45,212,191,0.10)',  border: 'rgba(45,212,191,0.20)',  Icon: Monitor },
-  Others:  { color: '#94A3B8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.20)', Icon: Package },
-}
-const formatDate = (date) => {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  })
+  Others:  { color: '#94A3B8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.22)', Icon: Package },
 }
 
+const formatDate = (date) => {
+  if (!date) return '—'
+  return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+}
 const formatRp    = (n)  => Number(n).toLocaleString('id-ID', { maximumFractionDigits: 0 })
 const isExpired   = (d)  => !!d && new Date(d) < new Date()
 const isOverduePM = (pm) => pm.status !== 'Selesai' && pm.next_date && new Date(pm.next_date) < new Date()
@@ -60,7 +60,6 @@ const makeInput = (theme, hasErr) => ({
   color: theme.text, outline: 'none', boxSizing: 'border-box',
   fontFamily: 'inherit', transition: 'border-color 0.2s',
 })
-
 const labelSt = (theme) => ({
   display: 'block', fontSize: 10, fontWeight: 600,
   textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -69,16 +68,10 @@ const labelSt = (theme) => ({
 
 // ─── Modal ────────────────────────────────────────────────────
 const Modal = ({ onClose, children, maxWidth = 560, theme }) => (
-  <div onClick={onClose} style={{
-    position: 'fixed', inset: 0, background: theme.overlay,
-    backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', zIndex: 1000, padding: 12, overflowY: 'auto',
-  }}>
-    <div onClick={e => e.stopPropagation()} style={{
-      background: theme.surface, border: `1px solid ${theme.border}`,
-      borderRadius: 18, padding: '20px 24px', width: '100%', maxWidth,
-      boxShadow: '0 25px 60px rgba(0,0,0,0.35)', margin: '16px 0',
-    }}>{children}</div>
+  <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: theme.overlay, backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 12, overflowY: 'auto' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 18, padding: '20px 24px', width: '100%', maxWidth, boxShadow: '0 25px 60px rgba(0,0,0,0.35)', margin: '16px 0' }}>
+      {children}
+    </div>
   </div>
 )
 
@@ -88,27 +81,33 @@ const ModalHeader = ({ title, subtitle, onClose, theme }) => (
       <p style={{ color: theme.text, fontWeight: 700, fontSize: 15, margin: 0 }}>{title}</p>
       {subtitle && <p style={{ color: theme.textMuted, fontSize: 11, marginTop: 2, wordBreak: 'break-all' }}>{subtitle}</p>}
     </div>
-    <button onClick={onClose} style={{
-      width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      borderRadius: 8, background: theme.surfaceAlt, border: `1px solid ${theme.border}`,
-      color: theme.textMuted, cursor: 'pointer', flexShrink: 0, marginLeft: 12,
-    }}><X size={13} /></button>
+    <button onClick={onClose} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: theme.surfaceAlt, border: `1px solid ${theme.border}`, color: theme.textMuted, cursor: 'pointer', flexShrink: 0, marginLeft: 12 }}>
+      <X size={13} />
+    </button>
   </div>
 )
 
-// ─── AssetFormModal ───────────────────────────────────────────
+// ─── AssetFormModal (dengan dropdown kategori & lokasi dari API) ──
 const EMPTY_FORM = {
-  name: '', category: 'Laptop', brand: '', model: '',
+  name: '', category: '', brand: '', model: '',
   serial_number: '', location: '', user: '',
   warranty_expiry: '', status: 'Active',
   purchase_date: '', purchase_price: '', notes: '',
 }
 
 const AssetFormModal = ({ onClose, onSaved, editAsset, theme }) => {
-  const { authFetch }   = useAuth()
-  const [form, setForm] = useState({ ...EMPTY_FORM, ...editAsset })
+  const { authFetch } = useAuth()
+
+  // ── [TAMBAHAN] Hook master data ──
+  const { categoryNames: catNames, loading: catLoading } = useAssetCategories()
+  const { locationNames, loading: locLoading }           = useLocations()
+
+  const [form, setForm]     = useState({ ...EMPTY_FORM, ...editAsset })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+
+  const displayCategories = catNames.length > 0 ? catNames : CATEGORIES_FALLBACK
+
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: undefined })) }
   const validate = () => {
     const e = {}
@@ -131,42 +130,74 @@ const AssetFormModal = ({ onClose, onSaved, editAsset, theme }) => {
   }
   const inp = (err) => makeInput(theme, err)
   const lbl = labelSt(theme)
+
   return (
     <Modal onClose={onClose} maxWidth={560} theme={theme}>
       <ModalHeader title="Edit Aset" subtitle={`${editAsset.asset_number} · ${editAsset.serial_number}`} onClose={onClose} theme={theme} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {[
-          [{ label: 'Nama Aset', k: 'name', span: true, err: errors.name, ph: 'cth: Dell Latitude 5420' }],
-        ].flat().map(({ label, k, span, err, ph }) => (
-          <div key={k} style={{ gridColumn: span ? 'span 2' : 'span 1' }}>
-            <label style={lbl}>{label}</label>
-            <input style={inp(err)} placeholder={ph} value={form[k]} onChange={e => set(k, e.target.value)} />
-            {err && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{err}</p>}
-          </div>
-        ))}
-        {[['Kategori','category'], ['Status','status']].map(([lbl2, k]) => (
-          <div key={k}>
-            <label style={lbl}>{lbl2}</label>
-            <select style={inp(false)} value={form[k]} onChange={e => set(k, e.target.value)}>
-              {(k === 'category' ? CATEGORIES : STATUSES).map(o => <option key={o}>{o}</option>)}
-            </select>
-          </div>
-        ))}
-        {[['Brand','brand','Dell'],['Model','model','Latitude 5420']].map(([lbl2,k,ph]) => (
-          <div key={k}><label style={lbl}>{lbl2}</label><input style={inp(false)} placeholder={ph} value={form[k]} onChange={e => set(k, e.target.value)} /></div>
-        ))}
-        <div><label style={lbl}>Serial Number</label><input style={inp(errors.serial_number)} value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />{errors.serial_number && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{errors.serial_number}</p>}</div>
-        <div><label style={lbl}>Lokasi</label><input style={inp(errors.location)} placeholder="Ruang IT Lt. 2" value={form.location} onChange={e => set('location', e.target.value)} />{errors.location && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{errors.location}</p>}</div>
+
+        <div style={{ gridColumn: 'span 2' }}>
+          <label style={lbl}>Nama Aset</label>
+          <input style={inp(errors.name)} placeholder="cth: Dell Latitude 5420" value={form.name} onChange={e => set('name', e.target.value)} />
+          {errors.name && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{errors.name}</p>}
+        </div>
+
+        {/* ── [TAMBAHAN] Kategori dari API ── */}
+        <div>
+          <label style={lbl}>Kategori</label>
+          <select style={inp(false)} value={form.category} onChange={e => set('category', e.target.value)} disabled={catLoading}>
+            {catLoading ? <option>Memuat...</option> : displayCategories.map(c => <option key={c}>{c}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label style={lbl}>Status</label>
+          <select style={inp(false)} value={form.status} onChange={e => set('status', e.target.value)}>
+            {STATUSES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+
+        <div><label style={lbl}>Brand</label><input style={inp(false)} placeholder="Dell" value={form.brand} onChange={e => set('brand', e.target.value)} /></div>
+        <div><label style={lbl}>Model</label><input style={inp(false)} placeholder="Latitude 5420" value={form.model} onChange={e => set('model', e.target.value)} /></div>
+
+        <div>
+          <label style={lbl}>Serial Number</label>
+          <input style={inp(errors.serial_number)} value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
+          {errors.serial_number && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{errors.serial_number}</p>}
+        </div>
+
+        {/* ── [TAMBAHAN] Lokasi dari API ── */}
+        <div>
+          <label style={lbl}>Lokasi</label>
+          <select style={inp(errors.location)} value={form.location} onChange={e => set('location', e.target.value)} disabled={locLoading}>
+            <option value="">-- Pilih Lokasi --</option>
+            {locLoading ? <option>Memuat...</option> : locationNames.map(l => <option key={l}>{l}</option>)}
+          </select>
+          {errors.location && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{errors.location}</p>}
+        </div>
+
         <div><label style={lbl}>Pengguna</label><input style={inp(false)} placeholder="(opsional)" value={form.user} onChange={e => set('user', e.target.value)} /></div>
         <div><label style={lbl}>Tgl Beli</label><input type="date" style={inp(false)} value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} /></div>
         <div><label style={lbl}>Harga Beli (Rp)</label><input type="number" style={inp(false)} value={form.purchase_price} onChange={e => set('purchase_price', e.target.value)} /></div>
-        <div style={{ gridColumn: 'span 2' }}><label style={lbl}>Garansi s/d</label><input type="date" style={inp(false)} value={form.warranty_expiry} onChange={e => set('warranty_expiry', e.target.value)} /></div>
-        <div style={{ gridColumn: 'span 2' }}><label style={lbl}>Catatan</label><input style={inp(false)} placeholder="(opsional)" value={form.notes} onChange={e => set('notes', e.target.value)} /></div>
+
+        <div style={{ gridColumn: 'span 2' }}>
+          <label style={lbl}>Garansi s/d</label>
+          <input type="date" style={inp(false)} value={form.warranty_expiry} onChange={e => set('warranty_expiry', e.target.value)} />
+        </div>
+
+        {/* ── [TAMBAHAN] Catatan jadi textarea ── */}
+        <div style={{ gridColumn: 'span 2' }}>
+          <label style={lbl}>Catatan</label>
+          <textarea style={{ ...inp(false), minHeight: 80, resize: 'vertical' }} placeholder="(opsional)" value={form.notes} onChange={e => set('notes', e.target.value)} />
+        </div>
       </div>
+
       {errors._global && <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, color: theme.danger, fontSize: 12 }}>{errors._global}</div>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
         <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.textMuted, fontSize: 13, cursor: 'pointer' }}>Batal</button>
-        <button onClick={handleSubmit} disabled={saving} style={{ padding: '8px 18px', borderRadius: 8, background: theme.accent, color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</button>
+        <button onClick={handleSubmit} disabled={saving} style={{ padding: '8px 18px', borderRadius: 8, background: theme.accent, color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+          {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+        </button>
       </div>
     </Modal>
   )
@@ -185,14 +216,7 @@ const TabBar = ({ active, onChange, theme }) => (
     {TABS.map(({ id, label, Icon }) => {
       const isActive = active === id
       return (
-        <button key={id} onClick={() => onChange(id)} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 14px', fontSize: 12, fontWeight: isActive ? 700 : 500,
-          borderRadius: '8px 8px 0 0', border: 'none', borderBottom: `2px solid ${isActive ? theme.accent : 'transparent'}`,
-          background: isActive ? `${theme.accent}12` : 'transparent',
-          color: isActive ? theme.accent : theme.textMuted,
-          cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s',
-        }}>
+        <button key={id} onClick={() => onChange(id)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12, fontWeight: isActive ? 700 : 500, borderRadius: '8px 8px 0 0', border: 'none', borderBottom: `2px solid ${isActive ? theme.accent : 'transparent'}`, background: isActive ? `${theme.accent}12` : 'transparent', color: isActive ? theme.accent : theme.textMuted, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}>
           <Icon size={13} /> {label}
         </button>
       )
@@ -204,37 +228,19 @@ const TabBar = ({ active, onChange, theme }) => (
 const InfoTab = ({ asset, theme }) => {
   const expired = isExpired(asset.warranty_expiry)
   const fields = [
-  ['Kategori', asset.category],
-  ['Status', asset.status],
-  ['Brand / Model', [asset.brand, asset.model].filter(Boolean).join(' ')],
-  ['Lokasi', asset.location],
-  ['Pengguna', asset.user || '—'],
-  [
-    'Garansi s/d',
-    asset.warranty_expiry
-      ? (
-        <span style={{ color: expired ? theme.danger : theme.success }}>
-          {formatDate(asset.warranty_expiry)}
-          {expired ? ' (Expired)' : ''}
-        </span>
-      )
-      : '—'
-  ],
-  ['Harga Beli', asset.purchase_price ? `Rp ${formatRp(asset.purchase_price)}` : '—'],
-
-  // ✅ FIX DI SINI
-  [
-    'Tgl Beli',
-    asset.purchase_date
-      ? (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Shield size={12} />
-          {formatDate(asset.purchase_date)}
-        </span>
-      )
-      : '—'
-  ],
-]
+    ['Kategori',     asset.category],
+    ['Status',       asset.status],
+    ['Brand / Model', [asset.brand, asset.model].filter(Boolean).join(' ')],
+    ['Lokasi',       asset.location],
+    ['Pengguna',     asset.user || '—'],
+    ['Garansi s/d',  asset.warranty_expiry
+      ? <span style={{ color: expired ? theme.danger : theme.success }}>{formatDate(asset.warranty_expiry)}{expired ? ' (Expired)' : ''}</span>
+      : '—'],
+    ['Harga Beli',   asset.purchase_price ? `Rp ${formatRp(asset.purchase_price)}` : '—'],
+    ['Tgl Beli',     asset.purchase_date
+      ? <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shield size={12} />{formatDate(asset.purchase_date)}</span>
+      : '—'],
+  ]
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
       {fields.map(([k, v]) => (
@@ -246,7 +252,7 @@ const InfoTab = ({ asset, theme }) => {
       {asset.notes && (
         <div style={{ gridColumn: '1 / -1', background: theme.surfaceAlt, borderRadius: 12, padding: '10px 14px' }}>
           <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: theme.textMuted, marginBottom: 4 }}>Catatan</p>
-          <p style={{ color: theme.textSub, fontSize: 13, margin: 0 }}>{asset.notes}</p>
+          <p style={{ color: theme.textSub, fontSize: 13, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{asset.notes}</p>
         </div>
       )}
     </div>
@@ -406,47 +412,64 @@ const PMTab = ({ asset, onRefresh, theme }) => {
         <div style={{ gridColumn: 'span 2' }}><label style={lbl}>Judul Maintenance</label><input style={inp} placeholder="cth: Cleaning & Thermal Paste" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
         <div><label style={lbl}>Interval</label><select style={inp} value={form.interval} onChange={e => setForm(f => ({ ...f, interval: e.target.value }))}>{PM_INTERVALS.map(i => <option key={i}>{i}</option>)}</select></div>
         <div><label style={lbl}>Tanggal Pertama</label><input type="date" style={inp} value={form.next_date} onChange={e => setForm(f => ({ ...f, next_date: e.target.value }))} /></div>
-        <div style={{ gridColumn: 'span 2' }}><label style={lbl}>Catatan (opsional)</label><input style={inp} placeholder="Instruksi khusus..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+        <div style={{ gridColumn: 'span 2' }}><label style={lbl}>Catatan (opsional)</label><textarea style={{ ...inp, minHeight: 72, resize: 'vertical' }} placeholder="Instruksi khusus..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
       </div>
       {error && <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: theme.danger, fontSize: 12 }}><AlertCircle size={12} /> {error}</div>}
       <button onClick={handleAdd} disabled={saving} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: theme.accent, color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
         <Plus size={14} /> {saving ? 'Menyimpan...' : 'Tambah Jadwal'}
       </button>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: theme.text, paddingBottom: 10, borderBottom: `1px solid ${theme.border}`, marginTop: 8 }}>
         <ClipboardList size={14} color={theme.textMuted} /> Jadwal Terdaftar
         <span style={{ color: theme.textMuted, fontWeight: 400, fontSize: 12 }}>({pmList.length})</span>
       </div>
+
       {pmList.length === 0 ? (
         <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: 12, padding: '24px 0', border: `1px dashed ${theme.border}`, borderRadius: 12 }}>Belum ada jadwal PM untuk aset ini</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {pmList.map((pm) => {
             const overdue = isOverduePM(pm); const done = pm.status === 'Selesai'
-            const c = done ? { color: '#10B981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)' }
+            const c = done    ? { color: '#10B981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)' }
                     : overdue ? { color: theme.danger, bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)' }
-                    : { color: '#FBBF24', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' }
+                    :           { color: '#FBBF24', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' }
             const statusLabel = done ? 'Selesai' : overdue ? 'Terlambat' : 'Terjadwal'
             return (
-              <div key={pm.id ?? pm.title} style={{ display: 'flex', alignItems: 'center', gap: 12, background: c.bg, border: `1px solid ${overdue && !done ? 'rgba(239,68,68,0.30)' : theme.border}`, borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: c.bg, color: c.color }}>
-                  {done ? <CheckCheck size={16} /> : overdue ? <AlertCircle size={16} /> : <Bell size={16} />}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: theme.text, fontWeight: 600, fontSize: 13, margin: 0 }}>{pm.title}</p>
-                  <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
-                    {[[RefreshCw, pm.interval], [Calendar, formatDate(pm.next_date)], pm.last_done && [Clock, `Terakhir: ${formatDate(pm.last_done)}`]].filter(Boolean).map(([Ic, v], i) => (
-                      <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, color: theme.textMuted, fontSize: 11 }}><Ic size={9} /> {v}</span>
-                    ))}
+              <div key={pm.id ?? pm.title} style={{ background: c.bg, border: `1px solid ${overdue && !done ? 'rgba(239,68,68,0.30)' : theme.border}`, borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  {/* Icon */}
+                  <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: c.bg, color: c.color }}>
+                    {done ? <CheckCheck size={16} /> : overdue ? <AlertCircle size={16} /> : <Bell size={16} />}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: theme.text, fontWeight: 600, fontSize: 13, margin: 0 }}>{pm.title}</p>
+                    <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
+                      {[[RefreshCw, pm.interval], [Calendar, formatDate(pm.next_date)], pm.last_done && [Clock, `Terakhir: ${formatDate(pm.last_done)}`]].filter(Boolean).map(([Ic, v], i) => (
+                        <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, color: theme.textMuted, fontSize: 11 }}><Ic size={9} /> {v}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Status + Action */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 10px', borderRadius: 99, background: c.bg, border: `1px solid ${c.border}`, color: c.color }}>{statusLabel}</span>
+                    {!done && (
+                      <button onClick={() => handleComplete(pm.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderRadius: 8, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', color: '#10B981', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                        <CheckCheck size={11} /> Selesai
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 10px', borderRadius: 99, background: c.bg, border: `1px solid ${c.border}`, color: c.color }}>{statusLabel}</span>
-                  {!done && (
-                    <button onClick={() => handleComplete(pm.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderRadius: 8, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', color: '#10B981', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-                      <CheckCheck size={11} /> Selesai
-                    </button>
-                  )}
-                </div>
+
+                {/* ── [TAMBAHAN] Tampilkan catatan PM jika ada ── */}
+                {pm.notes && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginLeft: 48, padding: '6px 10px', background: theme.surface, borderRadius: 8, border: `1px solid ${theme.border}` }}>
+                    <FileText size={11} style={{ color: theme.textMuted, flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ fontSize: 12, color: theme.textSub, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{pm.notes}</p>
+                  </div>
+                )}
               </div>
             )
           })}
@@ -496,10 +519,10 @@ const AssetDetailPage = () => {
     </div>
   )
 
-  const a = asset
-  const cfg = CAT_COLORS[a.category] ?? CAT_COLORS.Others
+  const a     = asset
+  const cfg   = CAT_COLORS[a.category] ?? CAT_COLORS.Others
   const CatIcon = cfg.Icon
-  const sCfg = ASSET_STATUS_CFG[a.status]
+  const sCfg  = ASSET_STATUS_CFG[a.status]
   const expired = isExpired(a.warranty_expiry)
   const overdue = (a.pm_schedules ?? []).filter(isOverduePM).length
 
@@ -538,22 +561,8 @@ const AssetDetailPage = () => {
             <p style={{ color: theme.textMuted, fontSize: 12, margin: 0 }}>S/N: {a.serial_number} · {a.brand} {a.model}</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, textAlign: 'right', flexShrink: 0 }}>
-            {[
-              [Globe, a.location],
-              [User, a.user || 'Unassigned'],
-              [Shield, formatDate(a.warranty_expiry)]
-            ].map(([Ic, val], i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  gap: 5,
-                  fontSize: 11,
-                  color: theme.textMuted
-                }}
-              >
+            {[[Globe, a.location], [User, a.user || 'Unassigned'], [Shield, formatDate(a.warranty_expiry)]].map(([Ic, val], i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, fontSize: 11, color: theme.textMuted }}>
                 <Ic size={10} /> {val}
               </div>
             ))}

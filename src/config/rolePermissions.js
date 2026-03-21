@@ -8,7 +8,6 @@ export const ROLES = {
   user:        { label: 'User',        color: '#94A3B8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.22)' },
 }
 
-// Deskripsi tiap role
 export const ROLE_DESCRIPTIONS = {
   super_admin: 'Akses penuh ke seluruh sistem termasuk konfigurasi dan manajemen role.',
   manager_it:  'Manajemen tim IT, melihat laporan, dan mengelola eskalasi tiket.',
@@ -16,7 +15,6 @@ export const ROLE_DESCRIPTIONS = {
   user:        'Membuat tiket, melihat status, dan mengakses knowledge base.',
 }
 
-// Semua permissions yang ada di sistem, dikelompokkan per modul
 export const ALL_PERMISSIONS = [
   {
     group: 'Dashboard',
@@ -30,25 +28,25 @@ export const ALL_PERMISSIONS = [
     group: 'Tiket',
     key: 'tickets',
     items: [
-      { key: 'tickets.view',     label: 'Lihat Semua Tiket' },
-      { key: 'tickets.create',   label: 'Buat Tiket' },
-      { key: 'tickets.edit',     label: 'Edit Tiket' },
-      { key: 'tickets.delete',   label: 'Hapus Tiket' },
-      { key: 'tickets.assign',   label: 'Assign Tiket ke Teknisi' },
-      { key: 'tickets.resolve',  label: 'Resolve / Close Tiket' },
-      { key: 'tickets.comment',  label: 'Tambah Komentar' },
+      { key: 'tickets.view',    label: 'Lihat Semua Tiket' },
+      { key: 'tickets.create',  label: 'Buat Tiket' },
+      { key: 'tickets.edit',    label: 'Edit Tiket' },
+      { key: 'tickets.delete',  label: 'Hapus Tiket' },
+      { key: 'tickets.assign',  label: 'Assign Tiket ke Teknisi' },
+      { key: 'tickets.resolve', label: 'Resolve / Close Tiket' },
+      { key: 'tickets.comment', label: 'Tambah Komentar' },
     ],
   },
   {
     group: 'Aset',
     key: 'assets',
     items: [
-      { key: 'assets.view',      label: 'Lihat Aset' },
-      { key: 'assets.create',    label: 'Tambah Aset' },
-      { key: 'assets.edit',      label: 'Edit Aset' },
-      { key: 'assets.delete',    label: 'Hapus Aset' },
-      { key: 'assets.assign',    label: 'Assign Aset ke User' },
-      { key: 'assets.maintain',  label: 'Set Status Maintenance' },
+      { key: 'assets.view',     label: 'Lihat Aset' },
+      { key: 'assets.create',   label: 'Tambah Aset' },
+      { key: 'assets.edit',     label: 'Edit Aset' },
+      { key: 'assets.delete',   label: 'Hapus Aset' },
+      { key: 'assets.assign',   label: 'Assign Aset ke User' },
+      { key: 'assets.maintain', label: 'Set Status Maintenance' },
     ],
   },
   {
@@ -92,24 +90,23 @@ export const ALL_PERMISSIONS = [
     group: 'Role Management',
     key: 'roles',
     items: [
-      { key: 'roles.view',   label: 'Lihat Role & Permissions' },
-      { key: 'roles.edit',   label: 'Edit Permissions Role' },
+      { key: 'roles.view', label: 'Lihat Role & Permissions' },
+      { key: 'roles.edit', label: 'Edit Permissions Role' },
     ],
   },
-  // ── [TAMBAHAN] Master Data ────────────────────────────────────
   {
     group: 'Master Data',
     key: 'master',
     items: [
-      { key: 'master.view',              label: 'Lihat Master Data' },
-      { key: 'master.categories',        label: 'Master Category' },
-      { key: 'master.locations',         label: 'Master Lokasi' },
+      { key: 'master.view',             label: 'Lihat Master Data'     },
+      { key: 'master.categories',       label: 'Master Category'       },
+      { key: 'master.locations',        label: 'Master Lokasi'         },
+      // ── [TAMBAHAN] ──
+      { key: 'master.asset-categories', label: 'Master Kategori Aset' },
     ],
   },
 ]
 
-// Default permissions per role (bisa diedit di RolesPage)
-// Disimpan di localStorage key: 'role_permissions'
 export const DEFAULT_ROLE_PERMISSIONS = {
   super_admin: ALL_PERMISSIONS.flatMap(g => g.items.map(i => i.key)), // semua
 
@@ -122,8 +119,9 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     'reports.view', 'reports.export',
     'users.view', 'users.create', 'users.edit',
     'roles.view',
-    // ── [TAMBAHAN] ──
     'master.view', 'master.categories', 'master.locations',
+    // ── [TAMBAHAN] ──
+    'master.asset-categories',
   ],
 
   it_support: [
@@ -144,7 +142,6 @@ export const DEFAULT_ROLE_PERMISSIONS = {
   ],
 }
 
-// Helper: load permissions dari localStorage (jika sudah pernah diedit)
 export function loadRolePermissions() {
   try {
     const saved = localStorage.getItem('role_permissions')
@@ -154,12 +151,10 @@ export function loadRolePermissions() {
   }
 }
 
-// Helper: simpan permissions ke localStorage
 export function saveRolePermissions(perms) {
   localStorage.setItem('role_permissions', JSON.stringify(perms))
 }
 
-// Helper: cek apakah user punya permission tertentu
 export function userCan(userRole, permissionKey) {
   const perms = loadRolePermissions()
   return (perms[userRole] ?? []).includes(permissionKey)
