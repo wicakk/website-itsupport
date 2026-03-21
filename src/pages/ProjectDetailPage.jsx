@@ -135,7 +135,6 @@ function TaskCard({ task, onEdit, onDelete, onUpload, onOpenTracking, theme, onD
       onMouseEnter={e=>{ e.currentTarget.style.borderColor=theme.accent+'55'; e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)' }}
       onMouseLeave={e=>{ e.currentTarget.style.borderColor=theme.border; e.currentTarget.style.boxShadow='none' }}
     >
-      {/* Priority + actions */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
         <span style={{ fontSize:10, fontWeight:600, padding:'2px 7px', borderRadius:20, background:pri.bg, color:pri.color }}>{pri.label}</span>
         <div style={{ display:'flex', gap:3 }}>
@@ -146,25 +145,17 @@ function TaskCard({ task, onEdit, onDelete, onUpload, onOpenTracking, theme, onD
           <input ref={fileInput} type="file" style={{ display:'none' }} onChange={e=>{ if(e.target.files[0]) onUpload(task, e.target.files[0]); e.target.value='' }}/>
         </div>
       </div>
-
-      {/* Title */}
       <div style={{ fontSize:12, fontWeight:600, color:theme.text, marginBottom:4, lineHeight:1.4 }}>{task.title}</div>
-
-      {/* Kategori */}
       {task.category && (
         <div style={{ display:'inline-flex', alignItems:'center', marginBottom:4 }}>
           <span style={{ fontSize:10, padding:'1px 7px', borderRadius:20, background:theme.surfaceAlt, color:theme.textMuted, border:`1px solid ${theme.border}` }}>{task.category}</span>
         </div>
       )}
-
-      {/* Deskripsi */}
       {task.description && (
         <p style={{ fontSize:11, color:theme.textMuted, marginBottom:6, lineHeight:1.4, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
           {task.description}
         </p>
       )}
-
-      {/* Attachments */}
       {(task.attachments??[]).length > 0 && (
         <div style={{ marginBottom:6 }}>
           {task.attachments.map(att=>(
@@ -175,10 +166,7 @@ function TaskCard({ task, onEdit, onDelete, onUpload, onOpenTracking, theme, onD
           ))}
         </div>
       )}
-
-      {/* Footer */}
       <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginTop:6 }}>
-        {/* Assignee */}
         <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
           {task.assignee ? (
             <>
@@ -193,8 +181,6 @@ function TaskCard({ task, onEdit, onDelete, onUpload, onOpenTracking, theme, onD
             </div>
           )}
         </div>
-
-        {/* Tanggal + jam */}
         <div style={{ textAlign:'right' }}>
           {task.due_date && (
             <div style={{ display:'flex', alignItems:'center', gap:3, fontSize:10, color:overdue?theme.danger:theme.textMuted, justifyContent:'flex-end' }}>
@@ -248,19 +234,19 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate()
   const { T: theme } = useTheme()
 
-  const [project, setProject]         = useState(null)
-  const [loading, setLoading]         = useState(true)
-  const [taskModal, setTaskModal]     = useState({ open:false, task:null, columnId:null })
-  const [actionLoading, setAL]        = useState(false)
-  const [toast, setToast]             = useState(null)
-  const [dragOverCol, setDragOverCol] = useState(null)
+  const [project, setProject]             = useState(null)
+  const [loading, setLoading]             = useState(true)
+  const [taskModal, setTaskModal]         = useState({ open:false, task:null, columnId:null })
+  const [actionLoading, setAL]            = useState(false)
+  const [toast, setToast]                 = useState(null)
+  const [dragOverCol, setDragOverCol]     = useState(null)
   const [uploadingFile, setUploadingFile] = useState(false)
-  const [trackingPanel, setTrackingPanel] = useState(null) // task object
+  const [trackingPanel, setTrackingPanel] = useState(null)
   const [trackingData, setTrackingData]   = useState(null)
   const [trackingLoading, setTL]          = useState(false)
   const [commentText, setCommentText]     = useState('')
   const [commentSaving, setCS]            = useState(false)
-  const dragTask   = useRef(null)
+  const dragTask    = useRef(null)
   const projFileRef = useRef(null)
 
   const showToast = (msg, type='success') => { setToast({ msg, type }); setTimeout(()=>setToast(null), 3000) }
@@ -320,7 +306,7 @@ export default function ProjectDetailPage() {
   const handleDeleteTask = async (task) => {
     if (!window.confirm(`Hapus task "${task.title}"?`)) return
     try {
-      const res = await fetch(`/api/projects/${id}/tasks/${task.id}`,{ method:'DELETE', headers:getHeaders() })
+      const res  = await fetch(`/api/projects/${id}/tasks/${task.id}`,{ method:'DELETE', headers:getHeaders() })
       const json = await res.json()
       if (!json.success) throw new Error(json.message)
       setProject(prev=>({ ...prev, columns:prev.columns.map(col=>({ ...col, tasks:(col.tasks??[]).filter(t=>t.id!==task.id) })) }))
@@ -328,41 +314,24 @@ export default function ProjectDetailPage() {
     } catch(e){ showToast(e.message,'error') }
   }
 
-  // ── Upload file ───────────────────────────────────────────────
   const handleUpload = async (task, file) => {
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const res = await fetch(`/api/projects/${id}/tasks/${task.id}/attachments`, {
-        method:'POST',
-        headers:{ Accept:'application/json', Authorization:`Bearer ${localStorage.getItem('token')}` },
-        body: formData,
-      })
+      const res  = await fetch(`/api/projects/${id}/tasks/${task.id}/attachments`, { method:'POST', headers:{ Accept:'application/json', Authorization:`Bearer ${localStorage.getItem('token')}` }, body: formData })
       const json = await res.json()
       if (!json.success) throw new Error(json.message)
-      // Tambah attachment ke task
-      setProject(prev=>({
-        ...prev,
-        columns: prev.columns.map(col=>({
-          ...col,
-          tasks:(col.tasks??[]).map(t=>t.id===task.id?{ ...t, attachments:[...(t.attachments??[]),json.data] }:t),
-        })),
-      }))
+      setProject(prev=>({ ...prev, columns: prev.columns.map(col=>({ ...col, tasks:(col.tasks??[]).map(t=>t.id===task.id?{ ...t, attachments:[...(t.attachments??[]),json.data] }:t) })) }))
       showToast(`File "${file.name}" berhasil diupload ✓`)
     } catch(e){ showToast(e.message,'error') }
   }
 
-  // ── Upload file project ──────────────────────────────────────
   const handleUploadProjectFile = async (file) => {
     setUploadingFile(true)
     const fd = new FormData()
     fd.append('file', file)
     try {
-      const res = await fetch(`/api/projects/${id}/attachments`, {
-        method: 'POST',
-        headers: { Accept:'application/json', Authorization:`Bearer ${localStorage.getItem('token')}` },
-        body: fd,
-      })
+      const res  = await fetch(`/api/projects/${id}/attachments`, { method:'POST', headers:{ Accept:'application/json', Authorization:`Bearer ${localStorage.getItem('token')}` }, body: fd })
       const json = await res.json()
       if (!json.success) throw new Error(json.message)
       setProject(prev=>({ ...prev, attachments:[...(prev.attachments??[]), json.data] }))
@@ -374,10 +343,7 @@ export default function ProjectDetailPage() {
   const handleDeleteProjectFile = async (att) => {
     if (!window.confirm(`Hapus file "${att.filename}"?`)) return
     try {
-      const res = await fetch(`/api/projects/${id}/attachments/${att.id}`, {
-        method: 'DELETE',
-        headers: getHeaders(),
-      })
+      const res  = await fetch(`/api/projects/${id}/attachments/${att.id}`, { method:'DELETE', headers:getHeaders() })
       const json = await res.json()
       if (!json.success) throw new Error(json.message)
       setProject(prev=>({ ...prev, attachments:(prev.attachments??[]).filter(a=>a.id!==att.id) }))
@@ -385,11 +351,8 @@ export default function ProjectDetailPage() {
     } catch(e){ showToast(e.message,'error') }
   }
 
-  // ── Tracking Panel ───────────────────────────────────────────
   const openTracking = async (task) => {
-    setTrackingPanel(task)
-    setTrackingData(null)
-    setTL(true)
+    setTrackingPanel(task); setTrackingData(null); setTL(true)
     try {
       const res  = await fetch(`/api/projects/${id}/tasks/${task.id}/tracking`, { headers: getHeaders() })
       const json = await res.json()
@@ -402,30 +365,23 @@ export default function ProjectDetailPage() {
     if (!commentText.trim() || !trackingPanel) return
     setCS(true)
     try {
-      const res  = await fetch(`/api/projects/${id}/tasks/${trackingPanel.id}/comments`, {
-        method: 'POST', headers: getHeaders(), body: JSON.stringify({ body: commentText.trim() })
-      })
+      const res  = await fetch(`/api/projects/${id}/tasks/${trackingPanel.id}/comments`, { method:'POST', headers:getHeaders(), body:JSON.stringify({ body: commentText.trim() }) })
       const json = await res.json()
       if (!json.success) throw new Error(json.message)
-      setTrackingData(prev => ({
-        ...prev,
-        comments:  [json.data, ...(prev?.comments ?? [])],
-        histories: [{ id: Date.now(), type:'comment_added', description:'Menambahkan komentar', created_at: new Date().toISOString(), user: json.data.user }, ...(prev?.histories ?? [])],
-      }))
+      setTrackingData(prev=>({ ...prev, comments:[json.data,...(prev?.comments??[])], histories:[{ id:Date.now(), type:'comment_added', description:'Menambahkan komentar', created_at:new Date().toISOString(), user:json.data.user },...(prev?.histories??[])] }))
       setCommentText('')
-    } catch(e) { showToast(e.message, 'error') }
+    } catch(e) { showToast(e.message,'error') }
     finally { setCS(false) }
   }
 
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm('Hapus komentar ini?')) return
     try {
-      await fetch(`/api/projects/${id}/tasks/${trackingPanel.id}/comments/${commentId}`, { method: 'DELETE', headers: getHeaders() })
-      setTrackingData(prev => ({ ...prev, comments: (prev?.comments ?? []).filter(c => c.id !== commentId) }))
-    } catch(e) { showToast(e.message, 'error') }
+      await fetch(`/api/projects/${id}/tasks/${trackingPanel.id}/comments/${commentId}`, { method:'DELETE', headers:getHeaders() })
+      setTrackingData(prev=>({ ...prev, comments:(prev?.comments??[]).filter(c=>c.id!==commentId) }))
+    } catch(e) { showToast(e.message,'error') }
   }
 
-    // ── Drag & Drop ───────────────────────────────────────────────
   const handleDragStart = (e,task) => { dragTask.current=task; e.dataTransfer.effectAllowed='move' }
   const handleDragEnd   = () => setDragOverCol(null)
 
@@ -433,7 +389,6 @@ export default function ProjectDetailPage() {
     e.preventDefault()
     const task = dragTask.current
     if (!task || task.column_id===targetColId) { setDragOverCol(null); return }
-
     const updated = project.columns.map(col=>{
       if (col.id===task.column_id) return { ...col, tasks:col.tasks.filter(t=>t.id!==task.id) }
       if (col.id===targetColId)    return { ...col, tasks:[...(col.tasks??[]),{ ...task, column_id:targetColId }] }
@@ -441,7 +396,6 @@ export default function ProjectDetailPage() {
     })
     setProject(prev=>({ ...prev, columns:updated }))
     setDragOverCol(null)
-
     const tasks = updated.flatMap(col=>(col.tasks??[]).map((t,idx)=>({ id:t.id, column_id:col.id, position:idx })))
     try {
       await fetch(`/api/projects/${id}/tasks/reorder`,{ method:'PUT', headers:getHeaders(), body:JSON.stringify({ tasks }) })
@@ -449,15 +403,31 @@ export default function ProjectDetailPage() {
     } catch { loadProject() }
   }
 
-  // ── Stats (reactive dari project.columns state) ──────────────
-  const allTasks    = (project?.columns??[]).flatMap(c=>c.tasks??[])
-  const prodCol     = (project?.columns??[]).find(c=>c.name==='Prod')
-  const doneTasks   = (prodCol?.tasks??[]).length
-  const progress    = allTasks.length>0 ? Math.round((doneTasks/allTasks.length)*100) : 0
-  const isLate      = project?.due_date && !['completed','cancelled'].includes(project?.status) && new Date(project.due_date)<new Date()
-  const hasPendingTasks = allTasks.some(t=>{
-    const col = (project?.columns??[]).find(c=>c.id===t.column_id)
-    return !col || col.name!=='Prod'
+  // ── Stats — weighted by column position ──────────────────────
+  // Kolom pertama = 0%, kolom terakhir = 100%
+  // Contoh 5 kolom: Mulai(0%) → Analisa(25%) → Dev Local(50%) → Staging(75%) → Prod(100%)
+  const columns   = project?.columns ?? []
+  const totalCols = columns.length
+  const allTasks  = columns.flatMap(c => c.tasks ?? [])
+
+  const progress = (() => {
+    const total = allTasks.length
+    if (total === 0 || totalCols === 0) return 0
+    let score = 0
+    columns.forEach((col, idx) => {
+      const count  = (col.tasks ?? []).length
+      const weight = totalCols > 1 ? (idx / (totalCols - 1)) * 100 : 100
+      score += count * weight
+    })
+    return Math.min(100, Math.max(0, Math.round(score / total)))
+  })()
+
+  const prodCol         = columns.find(c => c.name === 'Prod')
+  const doneTasks       = (prodCol?.tasks ?? []).length
+  const isLate          = project?.due_date && !['completed','cancelled'].includes(project?.status) && new Date(project.due_date) < new Date()
+  const hasPendingTasks = allTasks.some(t => {
+    const col = columns.find(c => c.id === t.column_id)
+    return !col || col.name !== 'Prod'
   })
 
   if (loading) return (
@@ -516,8 +486,6 @@ export default function ProjectDetailPage() {
           <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:theme.textMuted }}>
             <CheckSquare size={14}/>{doneTasks}/{allTasks.length} task
           </div>
-
-          {/* Members dengan avatar + nama */}
           <div>
             <div style={{ display:'flex' }}>
               {(project.members??[]).slice(0,5).map((m,i)=>(
@@ -541,74 +509,53 @@ export default function ProjectDetailPage() {
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Paperclip size={14} color={theme.textMuted}/>
             <span style={{ fontSize:12, fontWeight:700, color:theme.text }}>File Lampiran Project</span>
-            <span style={{ fontSize:10, color:theme.textMuted, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, padding:'1px 7px', borderRadius:20 }}>
-              {(project.attachments??[]).length}
-            </span>
+            <span style={{ fontSize:10, color:theme.textMuted, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, padding:'1px 7px', borderRadius:20 }}>{(project.attachments??[]).length}</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <button
-              onClick={()=>projFileRef.current?.click()}
-              disabled={uploadingFile}
-              style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:8, background:theme.surfaceAlt, color:theme.text, border:`1px solid ${theme.border}`, fontSize:11, fontWeight:600, cursor:uploadingFile?'not-allowed':'pointer', opacity:uploadingFile?0.7:1 }}
-            >
+            <button onClick={()=>projFileRef.current?.click()} disabled={uploadingFile}
+              style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:8, background:theme.surfaceAlt, color:theme.text, border:`1px solid ${theme.border}`, fontSize:11, fontWeight:600, cursor:uploadingFile?'not-allowed':'pointer', opacity:uploadingFile?0.7:1 }}>
               {uploadingFile
                 ? <><span style={{ width:11, height:11, border:'2px solid rgba(0,0,0,0.2)', borderTop:'2px solid currentColor', borderRadius:'50%', display:'inline-block', animation:'spin 0.7s linear infinite' }}/>Uploading...</>
                 : <><Upload size={12}/>Tambah File</>
               }
             </button>
-            <input ref={projFileRef} type="file" multiple style={{ display:'none' }}
-              onChange={e=>{ Array.from(e.target.files).forEach(f=>handleUploadProjectFile(f)); e.target.value='' }}
-            />
+            <input ref={projFileRef} type="file" multiple style={{ display:'none' }} onChange={e=>{ Array.from(e.target.files).forEach(f=>handleUploadProjectFile(f)); e.target.value='' }}/>
           </div>
         </div>
-
         {(project.attachments??[]).length === 0 ? (
-          <div
-            onClick={()=>projFileRef.current?.click()}
-            onDragOver={e=>e.preventDefault()}
-            onDrop={e=>{ e.preventDefault(); Array.from(e.dataTransfer.files).forEach(f=>handleUploadProjectFile(f)) }}
+          <div onClick={()=>projFileRef.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{ e.preventDefault(); Array.from(e.dataTransfer.files).forEach(f=>handleUploadProjectFile(f)) }}
             style={{ border:`2px dashed ${theme.border}`, borderRadius:8, padding:'20px', textAlign:'center', cursor:'pointer', color:theme.textMuted, fontSize:12 }}
-            onMouseEnter={e=>e.currentTarget.style.borderColor=theme.accent}
-            onMouseLeave={e=>e.currentTarget.style.borderColor=theme.border}
-          >
+            onMouseEnter={e=>e.currentTarget.style.borderColor=theme.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=theme.border}>
             <Paperclip size={18} style={{ margin:'0 auto 6px' }}/>
             <div>Belum ada file — klik atau drag & drop untuk upload</div>
           </div>
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:8 }}>
             {(project.attachments??[]).map(att=>{
-              const isImage = att.mime_type?.startsWith('image/')
-              const ext = att.filename.split('.').pop().toLowerCase()
-              const extColors = { pdf:'#EF4444', doc:'#3B82F6', docx:'#3B82F6', xls:'#10B981', xlsx:'#10B981', zip:'#F59E0B', rar:'#F59E0B' }
-              const extColor = extColors[ext] ?? theme.accent
+              const isImage  = att.mime_type?.startsWith('image/')
+              const ext      = att.filename.split('.').pop().toLowerCase()
+              const extColor = ({ pdf:'#EF4444', doc:'#3B82F6', docx:'#3B82F6', xls:'#10B981', xlsx:'#10B981', zip:'#F59E0B', rar:'#F59E0B' })[ext] ?? theme.accent
               return (
                 <div key={att.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:8, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, transition:'all 0.15s' }}
-                  onMouseEnter={e=>e.currentTarget.style.borderColor=theme.accent+'55'}
-                  onMouseLeave={e=>e.currentTarget.style.borderColor=theme.border}
-                >
-                  {/* Icon/preview */}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=theme.accent+'55'} onMouseLeave={e=>e.currentTarget.style.borderColor=theme.border}>
                   <div style={{ width:36, height:36, borderRadius:8, background:extColor+'15', border:`1px solid ${extColor}33`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:10, fontWeight:800, color:extColor, textTransform:'uppercase' }}>
                     {isImage ? '🖼' : ext.slice(0,4)}
                   </div>
-                  {/* Info */}
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:11, fontWeight:600, color:theme.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{att.filename}</div>
                     <div style={{ fontSize:10, color:theme.textMuted }}>{att.size_formatted} · {att.uploader?.name}</div>
                   </div>
-                  {/* Actions */}
                   <div style={{ display:'flex', gap:4, flexShrink:0 }}>
                     <a href={att.url} download={att.filename} target="_blank" rel="noreferrer" title="Download"
                       style={{ width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:6, background:'transparent', border:`1px solid ${theme.border}`, color:theme.accent, textDecoration:'none', cursor:'pointer' }}
                       onMouseEnter={e=>{ e.currentTarget.style.background=theme.accent; e.currentTarget.style.color='#fff' }}
-                      onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color=theme.accent }}
-                    >
+                      onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color=theme.accent }}>
                       <Download size={12}/>
                     </a>
                     <button onClick={()=>handleDeleteProjectFile(att)} title="Hapus file"
                       style={{ width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:6, background:'transparent', border:`1px solid ${theme.border}`, color:theme.textMuted, cursor:'pointer' }}
                       onMouseEnter={e=>{ e.currentTarget.style.background='rgba(239,68,68,0.1)'; e.currentTarget.style.color=theme.danger }}
-                      onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color=theme.textMuted }}
-                    >
+                      onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color=theme.textMuted }}>
                       <Trash2 size={12}/>
                     </button>
                   </div>
@@ -631,18 +578,13 @@ export default function ProjectDetailPage() {
               <KanbanColumn key={col.id} column={col} theme={theme} isDragOver={dragOverCol===col.id}
                 onAddTask={colId=>setTaskModal({ open:true, task:null, columnId:colId })}
                 onEditTask={task=>setTaskModal({ open:true, task, columnId:task.column_id })}
-                onDeleteTask={handleDeleteTask}
-                onUploadTask={handleUpload}
-                onOpenTracking={openTracking}
-                onDragStart={handleDragStart} onDragEnd={handleDragEnd}
-                onDragOver={setDragOverCol} onDrop={handleDrop}
-              />
+                onDeleteTask={handleDeleteTask} onUploadTask={handleUpload} onOpenTracking={openTracking}
+                onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={setDragOverCol} onDrop={handleDrop}/>
             ))}
           </div>
         )}
       </div>
 
-      {/* Task Modal */}
       {taskModal.open && (
         <TaskFormModal task={taskModal.task} columns={project.columns??[]} members={project.members??[]}
           defaultColumnId={taskModal.columnId}
@@ -652,16 +594,12 @@ export default function ProjectDetailPage() {
 
       {toast && <Toast message={toast.msg} type={toast.type}/>}
 
-      {/* ── Tracking Panel (slide dari kanan) ──────────────────── */}
+      {/* ── Tracking Panel ────────────────────────────────────── */}
       {trackingPanel && (
         <>
-          {/* Backdrop */}
           <div onClick={()=>setTrackingPanel(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:40 }}/>
-          {/* Panel */}
           <div style={{ position:'fixed', top:0, right:0, bottom:0, width:420, background:theme.surface, borderLeft:`1px solid ${theme.border}`, zIndex:41, display:'flex', flexDirection:'column', boxShadow:'-8px 0 32px rgba(0,0,0,0.15)', animation:'slideIn 0.25s ease-out' }}>
             <style>{`@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
-
-            {/* Panel Header */}
             <div style={{ padding:'16px 20px', borderBottom:`1px solid ${theme.border}`, flexShrink:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -673,9 +611,7 @@ export default function ProjectDetailPage() {
               <div style={{ fontSize:13, fontWeight:600, color:theme.text }}>{trackingPanel.title}</div>
               {trackingData?.task?.column && (
                 <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:4 }}>
-                  <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:theme.surfaceAlt, color:theme.textMuted, border:`1px solid ${theme.border}` }}>
-                    {trackingData.task.column.name}
-                  </span>
+                  <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:theme.surfaceAlt, color:theme.textMuted, border:`1px solid ${theme.border}` }}>{trackingData.task.column.name}</span>
                   {trackingData?.task?.assignee && (
                     <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                       <div style={{ width:20, height:20, borderRadius:'50%', background:trackingData.task.assignee.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:700, color:'#fff' }}>
@@ -688,12 +624,10 @@ export default function ProjectDetailPage() {
               )}
             </div>
 
-            {/* Panel Body */}
             <div style={{ flex:1, overflowY:'auto', padding:'16px 20px', display:'flex', flexDirection:'column', gap:20 }}>
               {trackingLoading ? (
                 <div style={{ textAlign:'center', padding:40, color:theme.textMuted, fontSize:13 }}>
-                  <Loader size={20} style={{ animation:'spin 1s linear infinite', display:'block', margin:'0 auto 8px' }}/>
-                  Memuat data...
+                  <Loader size={20} style={{ animation:'spin 1s linear infinite', display:'block', margin:'0 auto 8px' }}/>Memuat data...
                 </div>
               ) : (
                 <>
@@ -703,29 +637,24 @@ export default function ProjectDetailPage() {
                       <MessageSquare size={13} color={theme.accent}/>
                       <span style={{ fontSize:12, fontWeight:700, color:theme.text }}>Komentar ({(trackingData?.comments??[]).length})</span>
                     </div>
-                    {/* Input komentar baru */}
                     <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-                      <textarea value={commentText} onChange={e=>setCommentText(e.target.value)}
-                        placeholder="Tulis komentar..."
+                      <textarea value={commentText} onChange={e=>setCommentText(e.target.value)} placeholder="Tulis komentar..."
                         onKeyDown={e=>{ if(e.key==='Enter' && e.ctrlKey) handleAddComment() }}
                         style={{ flex:1, padding:'8px 10px', borderRadius:8, border:`1px solid ${theme.border}`, background:theme.surfaceAlt, color:theme.text, fontSize:12, outline:'none', resize:'none', minHeight:60, fontFamily:'inherit' }}/>
                       <button onClick={handleAddComment} disabled={commentSaving || !commentText.trim()}
-                        style={{ width:36, height:36, borderRadius:8, background:theme.accent, color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, alignSelf:'flex-end', opacity: !commentText.trim() ? 0.5 : 1 }}>
+                        style={{ width:36, height:36, borderRadius:8, background:theme.accent, color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, alignSelf:'flex-end', opacity:!commentText.trim()?0.5:1 }}>
                         <Send size={14}/>
                       </button>
                     </div>
-                    {/* List komentar */}
                     {(trackingData?.comments??[]).length === 0 ? (
                       <div style={{ textAlign:'center', padding:'12px', color:theme.textMuted, fontSize:12 }}>Belum ada komentar</div>
                     ) : (
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                        {(trackingData?.comments??[]).map(cm => (
+                        {(trackingData?.comments??[]).map(cm=>(
                           <div key={cm.id} style={{ background:theme.surfaceAlt, borderRadius:10, padding:'10px 12px', border:`1px solid ${theme.border}` }}>
                             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                                <div style={{ width:22, height:22, borderRadius:'50%', background:cm.user?.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:700, color:'#fff' }}>
-                                  {(cm.user?.name??'').slice(0,2).toUpperCase()}
-                                </div>
+                                <div style={{ width:22, height:22, borderRadius:'50%', background:cm.user?.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:700, color:'#fff' }}>{(cm.user?.name??'').slice(0,2).toUpperCase()}</div>
                                 <span style={{ fontSize:11, fontWeight:600, color:theme.text }}>{cm.user?.name}</span>
                               </div>
                               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -748,16 +677,13 @@ export default function ProjectDetailPage() {
                         <span style={{ fontSize:12, fontWeight:700, color:theme.text }}>File ({(trackingData?.attachments??[]).length})</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                        {(trackingData?.attachments??[]).map(att => {
-                          const ext = att.filename.split('.').pop().toLowerCase()
-                          const extColor = { pdf:'#EF4444', doc:'#3B82F6', docx:'#3B82F6', xls:'#10B981', xlsx:'#10B981' }[ext] ?? theme.accent
+                        {(trackingData?.attachments??[]).map(att=>{
+                          const ext      = att.filename.split('.').pop().toLowerCase()
+                          const extColor = ({ pdf:'#EF4444', doc:'#3B82F6', docx:'#3B82F6', xls:'#10B981', xlsx:'#10B981' })[ext] ?? theme.accent
                           return (
-                            <a key={att.id} href={att.url} target="_blank" rel="noreferrer"
-                              download={att.filename}
-                            style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:8, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, textDecoration:'none', transition:'border-color 0.15s' }}
-                              onMouseEnter={e=>e.currentTarget.style.borderColor=theme.accent+'55'}
-                              onMouseLeave={e=>e.currentTarget.style.borderColor=theme.border}
-                            >
+                            <a key={att.id} href={att.url} target="_blank" rel="noreferrer" download={att.filename}
+                              style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:8, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, textDecoration:'none', transition:'border-color 0.15s' }}
+                              onMouseEnter={e=>e.currentTarget.style.borderColor=theme.accent+'55'} onMouseLeave={e=>e.currentTarget.style.borderColor=theme.border}>
                               <div style={{ width:28, height:28, borderRadius:6, background:extColor+'18', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800, color:extColor, textTransform:'uppercase', flexShrink:0 }}>{ext.slice(0,4)}</div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ fontSize:11, fontWeight:600, color:theme.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{att.filename}</div>
@@ -781,36 +707,23 @@ export default function ProjectDetailPage() {
                       <div style={{ textAlign:'center', padding:'12px', color:theme.textMuted, fontSize:12 }}>Belum ada riwayat</div>
                     ) : (
                       <div style={{ position:'relative' }}>
-                        {/* Garis timeline */}
                         <div style={{ position:'absolute', left:10, top:0, bottom:0, width:2, background:theme.border }}/>
                         <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
-                          {(trackingData?.histories??[]).map((h, i) => {
-                            const typeIcon = {
-                              created:          { icon:'🆕', color:'#10B981' },
-                              column_changed:   { icon:'➡️', color:'#6366f1' },
-                              assignee_changed: { icon:'👤', color:'#F59E0B' },
-                              priority_changed: { icon:'🔺', color:'#EF4444' },
-                              comment_added:    { icon:'💬', color:'#06B6D4' },
-                              attachment_added: { icon:'📎', color:'#8B5CF6' },
-                            }[h.type] ?? { icon:'•', color:'#94A3B8' }
+                          {(trackingData?.histories??[]).map((h,i)=>{
+                            const typeIcon = ({ created:{color:'#10B981'}, column_changed:{color:'#6366f1'}, assignee_changed:{color:'#F59E0B'}, priority_changed:{color:'#EF4444'}, comment_added:{color:'#06B6D4'}, attachment_added:{color:'#8B5CF6'} })[h.type] ?? {color:'#94A3B8'}
                             return (
-                              <div key={h.id} style={{ display:'flex', gap:12, paddingLeft:24, paddingBottom:i < (trackingData?.histories??[]).length-1 ? 16 : 0, position:'relative' }}>
-                                {/* Dot */}
+                              <div key={h.id} style={{ display:'flex', gap:12, paddingLeft:24, paddingBottom:i<(trackingData?.histories??[]).length-1?16:0, position:'relative' }}>
                                 <div style={{ position:'absolute', left:5, top:2, width:12, height:12, borderRadius:'50%', background:typeIcon.color, border:`2px solid ${theme.surface}`, flexShrink:0 }}/>
                                 <div style={{ flex:1 }}>
                                   <div style={{ fontSize:12, color:theme.text, lineHeight:1.4 }}>{h.description}</div>
                                   <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3 }}>
                                     {h.user && (
                                       <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                                        <div style={{ width:16, height:16, borderRadius:'50%', background:h.user.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:7, fontWeight:700, color:'#fff' }}>
-                                          {(h.user.name??'').slice(0,2).toUpperCase()}
-                                        </div>
+                                        <div style={{ width:16, height:16, borderRadius:'50%', background:h.user.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:7, fontWeight:700, color:'#fff' }}>{(h.user.name??'').slice(0,2).toUpperCase()}</div>
                                         <span style={{ fontSize:10, color:theme.textMuted }}>{h.user.name}</span>
                                       </div>
                                     )}
-                                    <span style={{ fontSize:10, color:theme.textMuted }}>
-                                      {new Date(h.created_at).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
-                                    </span>
+                                    <span style={{ fontSize:10, color:theme.textMuted }}>{new Date(h.created_at).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
                                   </div>
                                 </div>
                               </div>
