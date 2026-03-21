@@ -28,7 +28,10 @@ const CAT_COLORS = {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
-const isExpired    = (d)  => !!d && new Date(d) < new Date()
+const isExpired = (d) => {
+  if (!d) return false
+  return new Date(d) < new Date()
+}
 const isOverduePM  = (pm) => pm.status !== 'Selesai' && pm.next_date && new Date(pm.next_date) < new Date()
 const countOverdue = (a)  => (a.pm_schedules ?? []).filter(isOverduePM).length
 
@@ -453,7 +456,7 @@ const AssetCard = ({ asset, onEdit, onDelete, theme }) => {
           {[
             [Globe,  asset.location,               false],
             [User,   asset.user || 'Unassigned',   false],
-            [Shield, asset.warranty_expiry || '—', expired],
+            [Shield, asset.warranty_expiry ? asset.warranty_expiry.split('T')[0] : '—', expired],
           ].map(([Ic, val, warn], i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, fontSize: 11, color: warn ? theme.danger : theme.textMuted }}>
               <Ic size={10} /> {val}

@@ -27,6 +27,14 @@ const CAT_COLORS = {
   Monitor: { color: '#2DD4BF', bg: 'rgba(45,212,191,0.10)',  border: 'rgba(45,212,191,0.20)',  Icon: Monitor },
   Others:  { color: '#94A3B8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.20)', Icon: Package },
 }
+const formatDate = (date) => {
+  if (!date) return '—'
+  return new Date(date).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+}
 
 const formatRp    = (n)  => Number(n).toLocaleString('id-ID', { maximumFractionDigits: 0 })
 const isExpired   = (d)  => !!d && new Date(d) < new Date()
@@ -196,17 +204,37 @@ const TabBar = ({ active, onChange, theme }) => (
 const InfoTab = ({ asset, theme }) => {
   const expired = isExpired(asset.warranty_expiry)
   const fields = [
-    ['Kategori',      asset.category],
-    ['Status',        asset.status],
-    ['Brand / Model', [asset.brand, asset.model].filter(Boolean).join(' ')],
-    ['Lokasi',        asset.location],
-    ['Pengguna',      asset.user || '—'],
-    ['Garansi s/d',   asset.warranty_expiry
-      ? <span style={{ color: expired ? theme.danger : theme.success }}>{asset.warranty_expiry}{expired ? ' (Expired)' : ''}</span>
-      : '—'],
-    ['Harga Beli',    asset.purchase_price ? `Rp ${formatRp(asset.purchase_price)}` : '—'],
-    ['Tgl Beli',      asset.purchase_date || '—'],
-  ]
+  ['Kategori', asset.category],
+  ['Status', asset.status],
+  ['Brand / Model', [asset.brand, asset.model].filter(Boolean).join(' ')],
+  ['Lokasi', asset.location],
+  ['Pengguna', asset.user || '—'],
+  [
+    'Garansi s/d',
+    asset.warranty_expiry
+      ? (
+        <span style={{ color: expired ? theme.danger : theme.success }}>
+          {formatDate(asset.warranty_expiry)}
+          {expired ? ' (Expired)' : ''}
+        </span>
+      )
+      : '—'
+  ],
+  ['Harga Beli', asset.purchase_price ? `Rp ${formatRp(asset.purchase_price)}` : '—'],
+
+  // ✅ FIX DI SINI
+  [
+    'Tgl Beli',
+    asset.purchase_date
+      ? (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Shield size={12} />
+          {formatDate(asset.purchase_date)}
+        </span>
+      )
+      : '—'
+  ],
+]
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
       {fields.map(([k, v]) => (
@@ -406,7 +434,7 @@ const PMTab = ({ asset, onRefresh, theme }) => {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ color: theme.text, fontWeight: 600, fontSize: 13, margin: 0 }}>{pm.title}</p>
                   <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
-                    {[[RefreshCw, pm.interval], [Calendar, pm.next_date], pm.last_done && [Clock, `Terakhir: ${pm.last_done}`]].filter(Boolean).map(([Ic, v], i) => (
+                    {[[RefreshCw, pm.interval], [Calendar, formatDate(pm.next_date)], pm.last_done && [Clock, `Terakhir: ${formatDate(pm.last_done)}`]].filter(Boolean).map(([Ic, v], i) => (
                       <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, color: theme.textMuted, fontSize: 11 }}><Ic size={9} /> {v}</span>
                     ))}
                   </div>
@@ -510,8 +538,24 @@ const AssetDetailPage = () => {
             <p style={{ color: theme.textMuted, fontSize: 12, margin: 0 }}>S/N: {a.serial_number} · {a.brand} {a.model}</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, textAlign: 'right', flexShrink: 0 }}>
-            {[[Globe, a.location], [User, a.user || 'Unassigned'], [Shield, a.warranty_expiry || '—']].map(([Ic, val], i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, fontSize: 11, color: theme.textMuted }}><Ic size={10} /> {val}</div>
+            {[
+              [Globe, a.location],
+              [User, a.user || 'Unassigned'],
+              [Shield, formatDate(a.warranty_expiry)]
+            ].map(([Ic, val], i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: 5,
+                  fontSize: 11,
+                  color: theme.textMuted
+                }}
+              >
+                <Ic size={10} /> {val}
+              </div>
             ))}
           </div>
         </div>
