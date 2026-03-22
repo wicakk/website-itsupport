@@ -563,13 +563,13 @@ export default function ProjectDetailPage() {
             <span style={{ fontSize:12, fontWeight:700, color:theme.text }}>File Lampiran Project</span>
             <span style={{ fontSize:10, color:theme.textMuted, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, padding:'1px 7px', borderRadius:20 }}>{(project.attachments??[]).length}</span>
           </div>
-          <div>
+          {/* <div>
             <button onClick={()=>projFileRef.current?.click()} disabled={uploadingFile}
               style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:8, background:theme.surfaceAlt, color:theme.text, border:`1px solid ${theme.border}`, fontSize:11, fontWeight:600, cursor:uploadingFile?'not-allowed':'pointer', opacity:uploadingFile?0.7:1 }}>
               {uploadingFile?<><span style={{ width:11, height:11, border:'2px solid rgba(0,0,0,0.2)', borderTop:'2px solid currentColor', borderRadius:'50%', display:'inline-block', animation:'spin 0.7s linear infinite' }}/>Uploading...</>:<><Upload size={12}/>Tambah File</>}
             </button>
             <input ref={projFileRef} type="file" multiple style={{ display:'none' }} onChange={e=>{ Array.from(e.target.files).forEach(f=>handleUploadProjectFile(f)); e.target.value='' }}/>
-          </div>
+          </div> */}
         </div>
         {(project.attachments??[]).length===0 ? (
           <div onClick={()=>projFileRef.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{ e.preventDefault(); Array.from(e.dataTransfer.files).forEach(f=>handleUploadProjectFile(f)) }}
