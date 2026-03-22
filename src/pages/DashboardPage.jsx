@@ -57,39 +57,20 @@ const fmtDate = (d) => !d ? '—' : new Date(d).toLocaleDateString('id-ID', { da
 
 // ── [TAMBAHAN] ProjectCard component ──────────────────────────
 const ProjectCard = ({ project, onClick, theme }) => {
-  const cfg = PROJECT_STATUS_CFG[project.status] ?? PROJECT_STATUS_CFG['Planning']
-
-  // Sinkron dengan ProjectsPage — pakai task_stats dari backend
-  // Fallback bertahap ke berbagai field yang mungkin ada
+  const cfg          = PROJECT_STATUS_CFG[project.status] ?? PROJECT_STATUS_CFG['Planning']
   const taskStats    = project.task_stats
-  const totalTasks   = taskStats?.total
-                    ?? project.tasks_count
-                    ?? project.tasks?.length
-                    ?? 0
-  const doneTasks    = taskStats?.completed
-                    ?? taskStats?.done
-                    ?? project.completed_tasks_count
-                    ?? project.done_tasks_count
-                    ?? project.tasks?.filter(t => t.status === 'Done' || t.status === 'Selesai' || t.status === 'done').length
-                    ?? 0
-  const progress     = taskStats?.progress != null
-    ? Number(taskStats.progress)
-    : project.progress != null
-      ? Number(project.progress)
-      : totalTasks > 0
-        ? Math.round((doneTasks / totalTasks) * 100)
-        : 0
-
-  const membersCount = project.members_count
-                    ?? project.members?.length
-                    ?? null
-
-  const isOverdue = project.end_date
+  const progress     = taskStats?.progress != null ? Number(taskStats.progress) : 0
+  const totalTasks   = taskStats?.total ?? 0
+  const membersCount = project.members_count ?? project.members?.length ?? null
+  const isOverdue    = project.end_date
     && new Date(project.end_date) < new Date()
-    && project.status !== 'Completed'
-    && project.status !== 'completed'
-    && project.status !== 'cancelled'
-    && project.status !== 'Cancelled'
+    && !['completed','Completed','cancelled','Cancelled'].includes(project.status)
+
+  // Kolom dari backend (sudah include tasks_count)
+  const columns = project.columns ?? []
+
+  // Warna dot per kolom
+  const colColors = ['#94A3B8','#6366f1','#F59E0B','#8B5CF6','#06B6D4','#10B981','#3B8BFF','#F472B6']
 
   return (
     <button onClick={onClick} style={{ textAlign: 'left', width: '100%', border: 'none', padding: 0, background: 'none', cursor: 'pointer', borderRadius: 12 }}>
@@ -100,7 +81,7 @@ const ProjectCard = ({ project, onClick, theme }) => {
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-          <p style={{ color: theme.text, fontWeight: 600, fontSize: 13, margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</p>
+          <p style={{ color: theme.text, fontWeight: 700, fontSize: 13, margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</p>
           <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color, flexShrink: 0 }}>
             {cfg.label ?? project.status}
           </span>
@@ -109,27 +90,52 @@ const ProjectCard = ({ project, onClick, theme }) => {
         {/* Progress bar */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-            <span style={{ fontSize: 10, color: theme.textMuted }}>
-              {totalTasks > 0 ? `${doneTasks}/${totalTasks} task selesai` : 'Progress'}
-            </span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: progress === 100 ? theme.success : theme.accent }}>
-              {progress}%
-            </span>
+            <span style={{ fontSize: 10, color: theme.textMuted }}>{totalTasks} task total</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: progress === 100 ? theme.success : theme.accent }}>{progress}%</span>
           </div>
-          <div style={{ height: 5, background: theme.border, borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: 4, background: theme.border, borderRadius: 99, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${progress}%`, background: progress === 100 ? theme.success : theme.accent, borderRadius: 99, transition: 'width 0.4s ease' }} />
           </div>
         </div>
 
-        {/* Meta */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {membersCount != null && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: theme.textMuted }}>
-                <Users size={10} /> {membersCount} anggota
-              </span>
-            )}
+        {/* ── Breakdown task per kolom ── */}
+        {columns.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {columns.map((col, idx) => {
+              const count   = col.tasks_count ?? 0
+              const pct     = totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0
+              const color   = col.color ?? colColors[idx % colColors.length]
+              const isLast  = idx === columns.length - 1
+              return (
+                <div key={col.id ?? idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {/* Dot */}
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                  {/* Nama kolom */}
+                  <span style={{ fontSize: 10, color: theme.textMuted, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {col.name}
+                  </span>
+                  {/* Count badge */}
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, minWidth: 18, textAlign: 'center',
+                    padding: '1px 6px', borderRadius: 99,
+                    background: count > 0 ? color + '20' : theme.border,
+                    color: count > 0 ? color : theme.textDim,
+                  }}>
+                    {count}
+                  </span>
+                </div>
+              )
+            })}
           </div>
+        )}
+
+        {/* Meta footer */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, paddingTop: 4, borderTop: `1px solid ${theme.border}` }}>
+          {membersCount != null && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: theme.textMuted }}>
+              <Users size={9} /> {membersCount} anggota
+            </span>
+          )}
           <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: isOverdue ? theme.danger : theme.textMuted }}>
             <Clock size={9} /> {fmtDate(project.end_date ?? project.due_date)}
             {isOverdue && <AlertTriangle size={9} />}
