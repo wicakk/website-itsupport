@@ -383,7 +383,8 @@ const MasterLocationsPage = () => {
                         {/* Status toggle */}
                         <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                           <button onClick={() => toggleActive(loc)} title={loc.is_active ? 'Klik untuk nonaktifkan' : 'Klik untuk aktifkan'}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600,
+                            style={{
+                              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600,
                               background: loc.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(156,163,175,0.12)',
                               color: loc.is_active ? theme.success : theme.textMuted,
                               border: `1px solid ${loc.is_active ? 'rgba(16,185,129,0.25)' : theme.border}`,
