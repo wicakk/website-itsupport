@@ -336,6 +336,10 @@ export default function ProjectDetailPage() {
   const [trackingLoading, setTL]          = useState(false)
   const [commentText, setCommentText]     = useState('')
   const [commentSaving, setCS]            = useState(false)
+  const [colAssigneeModal, setColAssigneeModal] = useState(null) // { task, targetColId, colName }
+  const [colAssigneeIds, setColAssigneeIds]     = useState([])
+  const [colAssigneeSaving, setColAssigneeSaving] = useState(false)
+  const [columnAssigneesMap, setColumnAssigneesMap] = useState({}) // taskId → [{column, assignees}]
   const dragTask    = useRef(null)
   const projFileRef = useRef(null)
 
@@ -431,9 +435,16 @@ export default function ProjectDetailPage() {
   const openTracking = async (task) => {
     setTrackingPanel(task); setTrackingData(null); setTL(true)
     try {
-      const res  = await fetch(`/api/projects/${id}/tasks/${task.id}/tracking`, { headers:getHeaders() })
-      const json = await res.json()
+      const [trackRes, colRes] = await Promise.all([
+        fetch(`/api/projects/${id}/tasks/${task.id}/tracking`, { headers:getHeaders() }),
+        fetch(`/api/projects/${id}/tasks/${task.id}/column-assignees`, { headers:getHeaders() }),
+      ])
+      const json = await trackRes.json()
       if (json.success) setTrackingData(json)
+      if (colRes.ok) {
+        const colJson = await colRes.json()
+        setColumnAssigneesMap(prev => ({ ...prev, [task.id]: colJson.data ?? [] }))
+      }
     } catch(e) { showToast(e.message,'error') }
     finally { setTL(false) }
   }
@@ -466,6 +477,8 @@ export default function ProjectDetailPage() {
     e.preventDefault()
     const task = dragTask.current
     if (!task || task.column_id===targetColId) { setDragOverCol(null); return }
+
+    // Pindahkan task di UI dulu
     const updated = project.columns.map(col=>{
       if (col.id===task.column_id) return { ...col, tasks:col.tasks.filter(t=>t.id!==task.id) }
       if (col.id===targetColId)    return { ...col, tasks:[...(col.tasks??[]),{ ...task, column_id:targetColId }] }
@@ -473,9 +486,50 @@ export default function ProjectDetailPage() {
     })
     setProject(prev=>({ ...prev, columns:updated }))
     setDragOverCol(null)
+
+    // Reorder di backend
     const tasks = updated.flatMap(col=>(col.tasks??[]).map((t,idx)=>({ id:t.id, column_id:col.id, position:idx })))
     try { await fetch(`/api/projects/${id}/tasks/reorder`,{ method:'PUT', headers:getHeaders(), body:JSON.stringify({ tasks }) }); showToast('Task dipindahkan ✓') }
-    catch { loadProject() }
+    catch { loadProject(); return }
+
+    // Tampilkan modal pilih assignee untuk kolom tujuan
+    const targetCol = project.columns.find(c => c.id === targetColId)
+    const existingAssignees = (columnAssigneesMap[task.id] ?? [])
+      .find(ca => ca.column?.id === targetColId)
+    const initIds = existingAssignees
+      ? existingAssignees.assignees.map(a => a.id)
+      : (task.assignees?.length ? task.assignees.map(a => a.id) : (task.assignee ? [task.assignee.id] : []))
+
+    setColAssigneeIds(initIds)
+    setColAssigneeModal({ task, targetColId, colName: targetCol?.name ?? 'Kolom' })
+  }
+
+  const handleSaveColAssignee = async () => {
+    if (!colAssigneeModal) return
+    setColAssigneeSaving(true)
+    try {
+      const res = await fetch(`/api/projects/${id}/tasks/${colAssigneeModal.task.id}/column-assignees`, {
+        method: 'POST', headers: getHeaders(),
+        body: JSON.stringify({ column_id: colAssigneeModal.targetColId, assignee_ids: colAssigneeIds }),
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.message)
+      // Update local map
+      setColumnAssigneesMap(prev => {
+        const taskId = colAssigneeModal.task.id
+        const existing = (prev[taskId] ?? []).filter(ca => ca.column?.id !== colAssigneeModal.targetColId)
+        const members = project.members ?? []
+        return {
+          ...prev,
+          [taskId]: [...existing, {
+            column: { id: colAssigneeModal.targetColId, name: colAssigneeModal.colName },
+            assignees: members.filter(m => colAssigneeIds.includes(m.id)),
+          }]
+        }
+      })
+      showToast(`Assignee untuk "${colAssigneeModal.colName}" disimpan ✓`)
+    } catch(e) { showToast(e.message, 'error') }
+    finally { setColAssigneeSaving(false); setColAssigneeModal(null) }
   }
 
   // Stats
@@ -599,7 +653,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* File Lampiran */}
-      {/* <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:12, padding:'14px 16px' }}>
+      <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:12, padding:'14px 16px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Paperclip size={14} color={theme.textMuted}/>
@@ -649,7 +703,7 @@ export default function ProjectDetailPage() {
             })}
           </div>
         )}
-      </div> */}
+      </div>
 
       {/* Kanban */}
       <div style={{ flex:1, overflowX:'auto', paddingBottom:16 }}>
@@ -678,6 +732,56 @@ export default function ProjectDetailPage() {
       )}
 
       {toast && <Toast message={toast.msg} type={toast.type}/>}
+
+      {/* ── Column Assignee Modal ── */}
+      {colAssigneeModal && (
+        <div onClick={()=>setColAssigneeModal(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:52, padding:16 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:16, width:'100%', maxWidth:420, boxShadow:'0 25px 60px rgba(0,0,0,0.4)', overflow:'hidden' }}>
+            {/* Header */}
+            <div style={{ padding:'16px 20px', borderBottom:`1px solid ${theme.border}`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <p style={{ color:theme.text, fontWeight:700, fontSize:14, margin:0 }}>Pilih Assignee</p>
+                <p style={{ color:theme.textMuted, fontSize:11, margin:'2px 0 0' }}>
+                  Untuk kolom <strong style={{ color:theme.accent }}>{colAssigneeModal.colName}</strong>
+                </p>
+              </div>
+              <button onClick={()=>setColAssigneeModal(null)} style={{ background:'none', border:'none', cursor:'pointer', color:theme.textMuted }}><X size={16}/></button>
+            </div>
+            {/* Body */}
+            <div style={{ padding:16, maxHeight:300, overflowY:'auto' }}>
+              {(project.members??[]).length === 0 ? (
+                <p style={{ color:theme.textMuted, fontSize:12, textAlign:'center', padding:20 }}>Belum ada member</p>
+              ) : (project.members??[]).map(m => {
+                const sel = colAssigneeIds.includes(m.id)
+                return (
+                  <label key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:8, cursor:'pointer', background: sel ? `${theme.accent}0d` : 'transparent', marginBottom:4, border:`1px solid ${sel ? theme.accent+'33' : 'transparent'}`, transition:'all 0.1s' }}>
+                    <input type="checkbox" checked={sel} onChange={()=>setColAssigneeIds(ids => sel ? ids.filter(x=>x!==m.id) : [...ids, m.id])} style={{ accentColor:theme.accent, width:14, height:14, flexShrink:0 }}/>
+                    <div style={{ width:28, height:28, borderRadius:'50%', background:m.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#fff', flexShrink:0 }}>
+                      {(m.name??'').slice(0,2).toUpperCase()}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:500, color:theme.text }}>{m.name}</div>
+                      <div style={{ fontSize:10, color:theme.textMuted }}>{m.role ?? ''}</div>
+                    </div>
+                    {sel && <div style={{ width:7, height:7, borderRadius:'50%', background:theme.accent }}/>}
+                  </label>
+                )
+              })}
+            </div>
+            {/* Footer */}
+            <div style={{ padding:'12px 16px', borderTop:`1px solid ${theme.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontSize:11, color:theme.textMuted }}>{colAssigneeIds.length} dipilih</span>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={()=>setColAssigneeModal(null)} style={{ padding:'7px 14px', borderRadius:8, border:`1px solid ${theme.border}`, background:'transparent', color:theme.textMuted, fontSize:13, cursor:'pointer' }}>Lewati</button>
+                <button onClick={handleSaveColAssignee} disabled={colAssigneeSaving}
+                  style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 16px', borderRadius:8, background:theme.accent, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:colAssigneeSaving?'not-allowed':'pointer', opacity:colAssigneeSaving?0.7:1 }}>
+                  <Save size={12}/>{colAssigneeSaving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tracking Panel */}
       {trackingPanel && (
@@ -709,6 +813,52 @@ export default function ProjectDetailPage() {
                 </div>
               ) : (
                 <>
+                  {/* ── Assignee per Kolom (dari API) ── */}
+                  {(() => {
+                    const taskId = trackingPanel?.id
+                    const colData = columnAssigneesMap[taskId] ?? []
+                    const currentColName = trackingData?.task?.column?.name
+
+                    if (colData.length === 0) return null
+
+                    return (
+                      <div>
+                        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10 }}>
+                          <div style={{ width:14, height:14, borderRadius:'50%', background:theme.accent, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            <svg width="8" height="8" viewBox="0 0 24 24" fill="#fff"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                          </div>
+                          <span style={{ fontSize:12, fontWeight:700, color:theme.text }}>Assignee per Status</span>
+                        </div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                          {colData.map(({ column, assignees }) => {
+                            const isCurrent = column?.name === currentColName
+                            return (
+                              <div key={column?.id} style={{ padding:'8px 12px', borderRadius:8, background: isCurrent ? `${theme.accent}0d` : theme.surfaceAlt, border:`1px solid ${isCurrent ? theme.accent+'33' : theme.border}` }}>
+                                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                                    <div style={{ width:7, height:7, borderRadius:'50%', background: isCurrent ? theme.accent : theme.textMuted }}/>
+                                    <span style={{ fontSize:11, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? theme.accent : theme.text }}>{column?.name}</span>
+                                  </div>
+                                  {isCurrent && <span style={{ fontSize:9, fontWeight:600, padding:'1px 6px', borderRadius:99, background:theme.accent, color:'#fff' }}>Sekarang</span>}
+                                </div>
+                                <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                                  {(assignees ?? []).length > 0 ? assignees.map(a => (
+                                    <div key={a.id} style={{ display:'flex', alignItems:'center', gap:4, padding:'2px 8px 2px 4px', borderRadius:99, background:`${a.color??'#6366f1'}15`, border:`1px solid ${a.color??'#6366f1'}30` }}>
+                                      <div style={{ width:16, height:16, borderRadius:'50%', background:a.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:7, fontWeight:700, color:'#fff' }}>
+                                        {(a.name??'').slice(0,2).toUpperCase()}
+                                      </div>
+                                      <span style={{ fontSize:10, color:theme.text, fontWeight:500 }}>{a.name?.split(' ')[0]}</span>
+                                    </div>
+                                  )) : <span style={{ fontSize:10, color:theme.textMuted }}>Tidak ada assignee</span>}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   <div>
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
                       <MessageSquare size={13} color={theme.accent}/>
@@ -785,11 +935,55 @@ export default function ProjectDetailPage() {
                         <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
                           {(trackingData?.histories??[]).map((h,i)=>{
                             const tc=({ created:'#10B981', column_changed:'#6366f1', assignee_changed:'#F59E0B', priority_changed:'#EF4444', comment_added:'#06B6D4', attachment_added:'#8B5CF6' })[h.type]??'#94A3B8'
+                            const members = project?.members ?? []
+
+                            // assignee_changed: parse to_value
+                            const isAssigneeChange = h.type === 'assignee_changed'
+                            const toNames = isAssigneeChange && h.to_value
+                              ? h.to_value.split(',').map(n => n.trim()).filter(Boolean)
+                              : []
+                            const toAvatars = toNames.map(n => members.find(m => m.name === n || m.name?.startsWith(n.split(' ')[0]))).filter(Boolean)
+
+                            // column_changed: parse assignee dari description "... | Assignee: X, Y"
+                            const isColChange = h.type === 'column_changed'
+                            const colAssigneeStr = isColChange && h.description?.includes('| Assignee:')
+                              ? h.description.split('| Assignee:')[1]?.trim() ?? ''
+                              : ''
+                            const colAvatars = colAssigneeStr && colAssigneeStr !== 'Tidak ada'
+                              ? colAssigneeStr.split(',').map(n => n.trim()).map(n => members.find(m => m.name === n || m.name?.startsWith(n.split(' ')[0]))).filter(Boolean)
+                              : []
+                            // Bersihkan description untuk tampilan (hapus bagian | Assignee:...)
+                            const displayDesc = isColChange
+                              ? (h.description?.split('| Assignee:')[0]?.trim() ?? h.description)
+                              : h.description
                             return (
                               <div key={h.id} style={{ display:'flex', gap:12, paddingLeft:24, paddingBottom:i<(trackingData?.histories??[]).length-1?16:0, position:'relative' }}>
                                 <div style={{ position:'absolute', left:5, top:2, width:12, height:12, borderRadius:'50%', background:tc, border:`2px solid ${theme.surface}`, flexShrink:0 }}/>
                                 <div style={{ flex:1 }}>
-                                  <div style={{ fontSize:12, color:theme.text, lineHeight:1.4 }}>{h.description}</div>
+                                  <div style={{ fontSize:12, color:theme.text, lineHeight:1.4 }}>{displayDesc}</div>
+
+                                  {/* Avatar assignee — tampil untuk assignee_changed DAN column_changed */}
+                                  {(() => {
+                                    const avatars = isAssigneeChange ? toAvatars : isColChange ? colAvatars : []
+                                    const label   = isAssigneeChange ? 'Assignee:' : isColChange ? 'Dikerjakan oleh:' : ''
+                                    if (avatars.length === 0) return null
+                                    return (
+                                      <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:6, flexWrap:'wrap' }}>
+                                        <span style={{ fontSize:10, color:theme.textMuted }}>{label}</span>
+                                        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+                                          {avatars.map(a => (
+                                            <div key={a.id} style={{ display:'flex', alignItems:'center', gap:4, padding:'2px 8px 2px 4px', borderRadius:99, background:`${a.color??'#6366f1'}15`, border:`1px solid ${a.color??'#6366f1'}30` }}>
+                                              <div style={{ width:16, height:16, borderRadius:'50%', background:a.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:7, fontWeight:700, color:'#fff' }}>
+                                                {(a.name??'').slice(0,2).toUpperCase()}
+                                              </div>
+                                              <span style={{ fontSize:10, color:theme.text, fontWeight:500 }}>{a.name?.split(' ')[0]}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )
+                                  })()}
+
                                   <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3 }}>
                                     {h.user && <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                                       <div style={{ width:16, height:16, borderRadius:'50%', background:h.user.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:7, fontWeight:700, color:'#fff' }}>{(h.user.name??'').slice(0,2).toUpperCase()}</div>
