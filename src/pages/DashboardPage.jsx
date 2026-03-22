@@ -62,8 +62,8 @@ const ProjectCard = ({ project, onClick, theme }) => {
   const progress     = taskStats?.progress != null ? Number(taskStats.progress) : 0
   const totalTasks   = taskStats?.total ?? 0
   const membersCount = project.members_count ?? project.members?.length ?? null
-  const isOverdue    = project.end_date
-    && new Date(project.end_date) < new Date()
+  const isOverdue    = (project.due_date ?? project.end_date)
+    && new Date(project.due_date ?? project.end_date) < new Date()
     && !['completed','Completed','cancelled','Cancelled'].includes(project.status)
 
   // Kolom dari backend (sudah include tasks_count)
@@ -88,15 +88,29 @@ const ProjectCard = ({ project, onClick, theme }) => {
         </div>
 
         {/* Progress bar */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-            <span style={{ fontSize: 10, color: theme.textMuted }}>{totalTasks} task total</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: progress === 100 ? theme.success : theme.accent }}>{progress}%</span>
-          </div>
-          <div style={{ height: 4, background: theme.border, borderRadius: 99, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: progress === 100 ? theme.success : theme.accent, borderRadius: 99, transition: 'width 0.4s ease' }} />
-          </div>
-        </div>
+        {(() => {
+          const revisiCol   = columns.find(c => c.name === 'Revisi')
+          const revisiCount = revisiCol ? (revisiCol.tasks_count ?? 0) : 0
+          const barColor    = revisiCount > 0 ? '#F97316' : progress === 100 ? theme.success : theme.accent
+          return (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, alignItems: 'center' }}>
+                <span style={{ fontSize: 10, color: theme.textMuted }}>{totalTasks} task total</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {revisiCount > 0 && (
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 99, background: 'rgba(249,115,22,0.12)', color: '#F97316', border: '1px solid rgba(249,115,22,0.25)' }}>
+                      ↩{revisiCount}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 10, fontWeight: 700, color: barColor }}>{progress}%</span>
+                </div>
+              </div>
+              <div style={{ height: 4, background: theme.border, borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progress}%`, background: barColor, borderRadius: 99, transition: 'width 0.4s ease' }} />
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── Breakdown task per kolom ── */}
         {columns.length > 0 && (
@@ -137,7 +151,7 @@ const ProjectCard = ({ project, onClick, theme }) => {
             </span>
           )}
           <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: isOverdue ? theme.danger : theme.textMuted }}>
-            <Clock size={9} /> {fmtDate(project.end_date ?? project.due_date)}
+            <Clock size={9} /> {fmtDate(project.due_date ?? project.end_date)}
             {isOverdue && <AlertTriangle size={9} />}
           </span>
         </div>
@@ -287,10 +301,12 @@ const DashboardPage = () => {
     // Support backend lowercase + Title Case
     inProgress: projects.filter(p => ['active','In Progress'].includes(p.status)).length,
     completed:  projects.filter(p => ['completed','Completed'].includes(p.status)).length,
-    overdue:    projects.filter(p =>
-      p.end_date && new Date(p.end_date) < new Date() &&
-      !['completed','Completed','cancelled','Cancelled'].includes(p.status)
-    ).length,
+    overdue:    projects.filter(p => {
+      const deadline = p.due_date ?? p.end_date
+      return deadline
+        && new Date(deadline) < new Date()
+        && !['completed','Completed','cancelled','Cancelled'].includes(p.status)
+    }).length,
   }
 
   return (

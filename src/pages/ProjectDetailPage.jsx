@@ -479,20 +479,58 @@ export default function ProjectDetailPage() {
   }
 
   // Stats
-  const columns   = project?.columns ?? []
+  // Sort kolom: Revisi selalu paling akhir, sisanya urut by position
+  const columns = (project?.columns ?? []).slice().sort((a, b) => {
+    if (a.name === 'Revisi') return 1
+    if (b.name === 'Revisi') return -1
+    return (a.position ?? 0) - (b.position ?? 0)
+  })
   const totalCols = columns.length
   const allTasks  = columns.flatMap(c => c.tasks ?? [])
-  const progress  = (() => {
+  const prodCol    = columns.find(c=>c.name==='Prod')
+  const revisiCol  = columns.find(c=>c.name==='Revisi')
+  const doneTasks  = (prodCol?.tasks??[]).length
+  const revisiCount = (revisiCol?.tasks??[]).length
+
+  const progress = (() => {
     const total = allTasks.length
-    if (total===0||totalCols===0) return 0
+    if (total === 0 || totalCols === 0) return 0
+
+    // Bobot per kolom berdasarkan nama (urutan semantik: Revisi = mundur dari Prod)
+    // Prod = 100%, Revisi = 57% (setara UAT), kolom lain by posisi urut tanpa Revisi
+    const FIXED_WEIGHT = {
+      'Mulai Project':   0,
+      'Analisa':        17,
+      'Develop Local':  33,
+      'Develop Staging':50,
+      'UAT':            67,
+      'Prod':          100,  // ← titik tertinggi
+      'Revisi':         57,  // ← mundur dari Prod (antara UAT dan Prod)
+    }
+
+    // Kolom non-default: hitung bobot dari posisinya di antara kolom non-Revisi
+    const nonRevisiCols = columns.filter(c => c.name !== 'Revisi')
+    const nonRevisiCount = nonRevisiCols.length
+
     let score = 0
-    columns.forEach((col,idx) => { score += (col.tasks??[]).length * (totalCols>1?(idx/(totalCols-1))*100:100) })
-    return Math.min(100, Math.max(0, Math.round(score/total)))
+    columns.forEach(col => {
+      const count = (col.tasks ?? []).length
+      if (count === 0) return
+      let weight = FIXED_WEIGHT[col.name]
+      if (weight === undefined) {
+        // Kolom custom: hitung by posisi di antara kolom non-Revisi
+        const idx = nonRevisiCols.findIndex(c => c.id === col.id)
+        weight = nonRevisiCount > 1 ? (idx / (nonRevisiCount - 1)) * 100 : 100
+      }
+      score += count * weight
+    })
+    return Math.min(100, Math.max(0, Math.round(score / total)))
   })()
-  const prodCol   = columns.find(c=>c.name==='Prod')
-  const doneTasks = (prodCol?.tasks??[]).length
-  const isLate    = project?.due_date && !['completed','cancelled'].includes(project?.status) && new Date(project.due_date)<new Date()
-  const hasPending= allTasks.some(t=>{ const col=columns.find(c=>c.id===t.column_id); return !col||col.name!=='Prod' })
+
+  const isLate     = project?.due_date && !['completed','cancelled'].includes(project?.status) && new Date(project.due_date)<new Date()
+  const hasPending = allTasks.some(t=>{ const col=columns.find(c=>c.id===t.column_id); return !col||col.name!=='Prod' })
+  // Warna progress: orange jika ada di Revisi, hijau jika 100%, warna project default
+  const progressColor = revisiCount > 0 ? '#F97316' : progress === 100 ? '#10B981' : (project?.color ?? '#6366f1')
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:300, gap:10, color:theme.textMuted, fontSize:13 }}>
@@ -535,9 +573,14 @@ export default function ProjectDetailPage() {
         <div style={{ display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:80, height:6, borderRadius:3, background:theme.border, overflow:'hidden' }}>
-              <div style={{ height:'100%', width:`${progress}%`, background:project.color??'#6366f1', borderRadius:3, transition:'width 0.5s' }}/>
+              <div style={{ height:'100%', width:`${progress}%`, background:progressColor, borderRadius:3, transition:'width 0.5s' }}/>
             </div>
             <span style={{ fontSize:11, color:theme.textMuted }}>{progress}% selesai</span>
+          {revisiCount > 0 && (
+            <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:99, background:'rgba(249,115,22,0.12)', color:'#F97316', border:'1px solid rgba(249,115,22,0.25)', display:'flex', alignItems:'center', gap:4 }}>
+              ↩ {revisiCount} revisi
+            </span>
+          )}
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:theme.textMuted }}>
             <CheckSquare size={14}/>{doneTasks}/{allTasks.length} task
@@ -556,20 +599,20 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* File Lampiran */}
-      <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:12, padding:'14px 16px' }}>
+      {/* <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:12, padding:'14px 16px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Paperclip size={14} color={theme.textMuted}/>
             <span style={{ fontSize:12, fontWeight:700, color:theme.text }}>File Lampiran Project</span>
             <span style={{ fontSize:10, color:theme.textMuted, background:theme.surfaceAlt, border:`1px solid ${theme.border}`, padding:'1px 7px', borderRadius:20 }}>{(project.attachments??[]).length}</span>
           </div>
-          {/* <div>
+          <div>
             <button onClick={()=>projFileRef.current?.click()} disabled={uploadingFile}
               style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:8, background:theme.surfaceAlt, color:theme.text, border:`1px solid ${theme.border}`, fontSize:11, fontWeight:600, cursor:uploadingFile?'not-allowed':'pointer', opacity:uploadingFile?0.7:1 }}>
               {uploadingFile?<><span style={{ width:11, height:11, border:'2px solid rgba(0,0,0,0.2)', borderTop:'2px solid currentColor', borderRadius:'50%', display:'inline-block', animation:'spin 0.7s linear infinite' }}/>Uploading...</>:<><Upload size={12}/>Tambah File</>}
             </button>
             <input ref={projFileRef} type="file" multiple style={{ display:'none' }} onChange={e=>{ Array.from(e.target.files).forEach(f=>handleUploadProjectFile(f)); e.target.value='' }}/>
-          </div> */}
+          </div>
         </div>
         {(project.attachments??[]).length===0 ? (
           <div onClick={()=>projFileRef.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{ e.preventDefault(); Array.from(e.dataTransfer.files).forEach(f=>handleUploadProjectFile(f)) }}
@@ -606,7 +649,7 @@ export default function ProjectDetailPage() {
             })}
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Kanban */}
       <div style={{ flex:1, overflowX:'auto', paddingBottom:16 }}>
