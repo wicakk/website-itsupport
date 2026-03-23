@@ -653,7 +653,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* File Lampiran */}
-      <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:12, padding:'14px 16px' }}>
+      {/* <div style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:12, padding:'14px 16px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Paperclip size={14} color={theme.textMuted}/>
@@ -703,7 +703,7 @@ export default function ProjectDetailPage() {
             })}
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Kanban */}
       <div style={{ flex:1, overflowX:'auto', paddingBottom:16 }}>
