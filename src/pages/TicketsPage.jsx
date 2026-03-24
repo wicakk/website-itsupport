@@ -369,6 +369,10 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
                 </div>
                 <div>
                   <label style={labelStyle}>Lokasi</label>
+                  <input style={inputStyle} value={hardware.lokasi} onChange={setHw('lokasi')} placeholder="Lokasi Aset" />
+                </div>
+                {/* <div>
+                  <label style={labelStyle}>Lokasi</label>
                   <select style={inputStyle} value={hardware.lokasi} onChange={setHw('lokasi')} disabled={locLoading}>
                     <option value="">-- Pilih Lokasi --</option>
                     {locLoading
@@ -376,7 +380,7 @@ const NewTicketModal = ({ onClose, onSubmit, theme }) => {
                       : locationNames.map(l => <option key={l}>{l}</option>)
                     }
                   </select>
-                </div>
+                </div> */}
               
 
               {/* Pengguna + Tgl Beli */}

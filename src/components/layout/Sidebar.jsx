@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { id: 'users',                  label: 'User Management',        iconName: 'Users'           },
   { id: 'roles',                  label: 'Role Management',        iconName: 'Shield'          },
   { id: 'master',                 label: 'Master Category',        iconName: 'BookMarked'      },
-  { id: 'master/locations',       label: 'Master Lokasi',          iconName: 'MapPin'          },
+  // { id: 'master/locations',       label: 'Master Lokasi',          iconName: 'MapPin'          },
   // ── [TAMBAHAN] Master Kategori Aset ──
   { id: 'master/asset-categories', label: 'Master Kategori Aset', iconName: 'Tag'             },
   { id: 'settings',               label: 'Settings',              iconName: 'Settings'        },

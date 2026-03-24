@@ -229,9 +229,12 @@ const AssetFormModal = ({ onClose, onSaved, editAsset = null, theme }) => {
         <Field label="Serial Number" error={errors.serial_number} theme={theme}>
           <input style={inp(errors.serial_number)} placeholder="SN-XXXXXXXX" value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
         </Field>
+        <Field label="Lokasi" error={errors.location} theme={theme}>
+          <input style={inp(errors.location)} placeholder="Location Asset" value={form.location} onChange={e => set('location', e.target.value)} />
+        </Field>
 
         {/* ── [TAMBAHAN] Lokasi dari API ── */}
-        <Field label="Lokasi" error={errors.location} theme={theme}>
+        {/* <Field label="Lokasi" error={errors.location} theme={theme}>
           <select style={inp(errors.location)} value={form.location} onChange={e => set('location', e.target.value)} disabled={locLoading}>
             <option value="">-- Pilih Lokasi --</option>
             {locLoading
@@ -240,7 +243,7 @@ const AssetFormModal = ({ onClose, onSaved, editAsset = null, theme }) => {
             }
           </select>
           {errors.location && <p style={{ color: theme.danger, fontSize: 11, marginTop: 4 }}>{errors.location}</p>}
-        </Field>
+        </Field> */}
 
         <Field label="Pengguna" theme={theme}>
           <input style={inp(false)} placeholder="(opsional)" value={form.user} onChange={e => set('user', e.target.value)} />

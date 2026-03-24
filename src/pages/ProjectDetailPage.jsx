@@ -553,13 +553,15 @@ export default function ProjectDetailPage() {
     // Bobot per kolom berdasarkan nama (urutan semantik: Revisi = mundur dari Prod)
     // Prod = 100%, Revisi = 57% (setara UAT), kolom lain by posisi urut tanpa Revisi
     const FIXED_WEIGHT = {
-      'Mulai Project':   0,
-      'Analisa':        17,
-      'Develop Local':  33,
-      'Develop Staging':50,
-      'UAT':            67,
-      'Prod':          100,  // ← titik tertinggi
-      'Revisi':         57,  // ← mundur dari Prod (antara UAT dan Prod)
+      'Mulai Project':    0,
+      'Analisa':         17,
+      'Develop Local':   33,
+      'Testing Lokal':   42,  // baru
+      'Develop Staging': 50,
+      'Testing Staging': 75,  // baru
+      'UAT':             67,
+      'Prod':           100,
+      'Revisi':          57,
     }
 
     // Kolom non-default: hitung bobot dari posisinya di antara kolom non-Revisi

@@ -100,7 +100,7 @@ export const ALL_PERMISSIONS = [
     items: [
       { key: 'master.view',             label: 'Lihat Master Data'     },
       { key: 'master.categories',       label: 'Master Category'       },
-      { key: 'master.locations',        label: 'Master Lokasi'         },
+      // { key: 'master.locations',        label: 'Master Lokasi'         },
       // ── [TAMBAHAN] ──
       { key: 'master.asset-categories', label: 'Master Kategori Aset' },
     ],
