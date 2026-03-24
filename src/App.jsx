@@ -38,7 +38,7 @@ function ProtectedRoutes() {
         <Route path="/users"                   element={<CanAccess permission="users.view"             redirect="/dashboard"><UsersPage /></CanAccess>} />
         <Route path="/roles"                   element={<CanAccess role="super_admin"                  redirect="/dashboard"><RolesPage /></CanAccess>} />
         <Route path="/master"                  element={<CanAccess role={['super_admin','manager_it']} redirect="/dashboard"><MasterCategoriesPage /></CanAccess>} />
-        <Route path="/master/locations"        element={<CanAccess role={['super_admin','manager_it']} redirect="/dashboard"><MasterLocationsPage /></CanAccess>} />
+        {/* <Route path="/master/locations"        element={<CanAccess role={['super_admin','manager_it']} redirect="/dashboard"><MasterLocationsPage /></CanAccess>} /> */}
         {/* ── [TAMBAHAN] ── */}
         <Route path="/master/asset-categories" element={<CanAccess role={['super_admin','manager_it']} redirect="/dashboard"><MasterAssetCategoriesPage /></CanAccess>} />
         <Route path="/settings"                element={<SettingsPage />} />
