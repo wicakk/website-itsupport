@@ -1,13 +1,42 @@
-// src/pages/ReportsPage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   BarChart3, TrendingUp, Zap, Package,
   FileText, Download, Loader2, Filter, X,
+  FolderKanban  // ✨ TAMBAHAN: Icon untuk Project
 } from 'lucide-react'
 import { PageHeader } from '../components/ui'
 import { useAuth } from '../context/AppContext'
 import { useTheme } from '../context/ThemeContext'
 
+// ✨ TAMBAHAN: Project Reports Configuration
+const PROJECT_REPORTS = [
+  { 
+    key: 'projects',
+    title: 'Laporan Project',
+    desc: 'Ringkasan project dengan status, progress, dan anggota tim.',
+    icon: FolderKanban,
+    color: '#3B82F6',
+    endpoint: '/api/project-reports/projects'
+  },
+  {
+    key: 'project_tasks',
+    title: 'Distribusi Task Project',
+    desc: 'Analisis task per project, kolom, dan prioritas.',
+    icon: Zap,
+    color: '#F59E0B',
+    endpoint: '/api/project-reports/tasks'
+  },
+  {
+    key: 'team_performance',
+    title: 'Kinerja Tim Project',
+    desc: 'Performa anggota tim berdasarkan task project yang diselesaikan.',
+    icon: TrendingUp,
+    color: '#8B5CF6',
+    endpoint: '/api/project-reports/team-performance'
+  },
+]
+
+// Existing IT Support Reports (tetap sama)
 const REPORTS = [
   { key:'tickets',     title:'Laporan Tiket',     desc:'Ringkasan tiket berdasarkan periode dan filter.',         icon:BarChart3,  color:'#3B82F6' },
   { key:'technicians', title:'Kinerja Teknisi',    desc:'Performa tim IT berdasarkan tiket diselesaikan.',         icon:TrendingUp, color:'#8B5CF6' },
@@ -15,6 +44,101 @@ const REPORTS = [
   { key:'assets',      title:'Inventaris Aset IT', desc:'Laporan lengkap aset IT beserta status dan warranty.',   icon:Package,    color:'#10B981' },
 ]
 
+// ✨ TAMBAHAN: Preview columns untuk Project Reports
+const PROJECT_PREVIEW_COLS = {
+  projects: [
+    { key: 'name', label: 'Nama Project' },
+    { key: 'category', label: 'Kategori' },
+    { key: 'status', label: 'Status',
+      render: v => {
+        const c = { active: '#10b981', on_hold: '#f59e0b', completed: '#3b82f6', cancelled: '#ef4444' }
+        return <span style={{ color: c[v] ?? 'inherit', fontWeight: 600 }}>{v?.replace('_', ' ').toUpperCase()}</span>
+      }
+    },
+    { key: 'priority', label: 'Prioritas',
+      render: v => {
+        const c = { low: '#22c55e', medium: '#f59e0b', high: '#f97316', urgent: '#ef4444' }
+        return <span style={{ color: c[v] ?? 'inherit', fontWeight: 700 }}>{v?.toUpperCase() ?? '—'}</span>
+      }
+    },
+    { key: 'progress', label: 'Progress',
+      render: v => {
+        const color = v >= 75 ? '#10b981' : v >= 50 ? '#f59e0b' : '#3b82f6'
+        return <span style={{ color, fontWeight: 600 }}>{v ?? 0}%</span>
+      }
+    },
+    { key: 'total_tasks', label: 'Total Task' },
+    { key: 'completed_tasks', label: 'Selesai' },
+    // ✨ KOLOM ANGGOTA: Menampilkan nama-nama tim
+    { key: 'members', label: 'Anggota Tim',
+      render: v => {
+        if (!Array.isArray(v) || v.length === 0) return '—'
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {v.slice(0, 3).map((name, i) => (
+              <span key={i} style={{
+                fontSize: 10,
+                padding: '2px 6px',
+                borderRadius: 4,
+                background: '#6366f118',
+                color: '#6366f1',
+                fontWeight: 500,
+                whiteSpace: 'nowrap'
+              }}>
+                {name}
+              </span>
+            ))}
+            {v.length > 3 && (
+              <span style={{
+                fontSize: 10,
+                padding: '2px 6px',
+                borderRadius: 4,
+                background: '#94a3b818',
+                color: '#64748b',
+                fontWeight: 500
+              }}>
+                +{v.length - 3}
+              </span>
+            )}
+          </div>
+        )
+      }
+    },
+    { key: 'creator_name', label: 'Pembuat' },
+    { key: 'start_date', label: 'Mulai', render: v => v ? new Date(v).toLocaleDateString('id-ID') : '—' },
+    { key: 'due_date', label: 'Deadline', render: v => v ? new Date(v).toLocaleDateString('id-ID') : '—' },
+  ],
+  project_tasks: [
+    { key: 'project_name', label: 'Project' },
+    { key: 'task_title', label: 'Task' },
+    { key: 'column_name', label: 'Kolom' },
+    { key: 'priority', label: 'Prioritas',
+      render: v => {
+        const c = { low: '#22c55e', medium: '#f59e0b', high: '#f97316', urgent: '#ef4444' }
+        return <span style={{ color: c[v] ?? 'inherit', fontWeight: 700 }}>{v?.toUpperCase() ?? '—'}</span>
+      }
+    },
+    { key: 'assigned_name', label: 'Dikerjakan oleh' },
+    { key: 'due_date', label: 'Deadline', render: v => v ? new Date(v).toLocaleDateString('id-ID') : '—' },
+    { key: 'created_at', label: 'Dibuat', render: v => v ? new Date(v).toLocaleDateString('id-ID') : '—' },
+  ],
+  team_performance: [
+    { key: 'name', label: 'Nama Member' },
+    { key: 'role', label: 'Role' },
+    { key: 'total_assigned', label: 'Task Ditugaskan' },
+    { key: 'completed_tasks', label: 'Task Selesai', render: v => <span style={{ color: '#10b981', fontWeight: 600 }}>{v}</span> },
+    { key: 'in_progress', label: 'Sedang Dikerjakan' },
+    { key: 'completion_rate', label: 'Completion %',
+      render: v => {
+        const color = v >= 80 ? '#10b981' : v >= 50 ? '#f59e0b' : '#ef4444'
+        return <span style={{ color, fontWeight: 700 }}>{v ?? 0}%</span>
+      }
+    },
+    { key: 'projects_count', label: 'Project Terlibat' },
+  ],
+}
+
+// Existing IT Support PREVIEW_COLS (tetap sama)
 const PREVIEW_COLS = {
   tickets: [
     { key:'ticket_number', label:'No. Tiket',  render:(v,r) => v ?? `#${r.id}` },
@@ -88,6 +212,10 @@ const FILTER_CONTEXT = {
   technicians: 'from, to, user_id (filter ke teknisi tertentu)',
   sla:         'from, to, user_id',
   assets:      'from (tgl beli), to (tgl beli), status aset',
+  // ✨ TAMBAHAN: Filter context untuk project reports
+  projects:          'from, to, status, priority',
+  project_tasks:     'from, to, priority',
+  team_performance:  'from, to',
 }
 
 const ReportsPage = () => {
@@ -101,7 +229,9 @@ const ReportsPage = () => {
   const [previewLoading, setPreviewLoading] = useState(null)
   const [users,          setUsers]          = useState([])
   const [showFilter,     setShowFilter]     = useState(false)
-  const [filters,        setFilters]        = useState({ from:'', to:'', user_id:'', status:'' })
+  // ✨ TAMBAHAN: State untuk toggle antara IT Support dan Project Reports
+  const [activeTab,      setActiveTab]      = useState('it-support') // 'it-support' atau 'projects'
+  const [filters,        setFilters]        = useState({ from:'', to:'', user_id:'', status:'', priority:'' })
 
   const month = new Date().toLocaleDateString('id-ID', { month:'long', year:'numeric' })
 
@@ -112,6 +242,7 @@ const ReportsPage = () => {
     if (filters.to)      p.set('to',      filters.to)
     if (filters.user_id) p.set('user_id', filters.user_id)
     if (filters.status)  p.set('status',  filters.status)
+    if (filters.priority) p.set('priority', filters.priority)
     Object.entries(extra).forEach(([k, v]) => v && p.set(k, v))
     return p.toString() ? '?' + p.toString() : ''
   }, [filters])
@@ -130,11 +261,15 @@ const ReportsPage = () => {
   const loadStats = useCallback(async () => {
     setStatsLoading(true)
     try {
-      const res = await apiFetch(`/api/reports/summary${buildParams()}`)
+      // ✨ TAMBAHAN: Load different endpoints based on active tab
+      const endpoint = activeTab === 'projects' 
+        ? `/api/project-reports/summary${buildParams()}`
+        : `/api/reports/summary${buildParams()}`
+      const res = await apiFetch(endpoint)
       setStats(await res.json())
     } catch (e) { console.warn('stats error:', e) }
     finally { setStatsLoading(false) }
-  }, [buildParams, apiFetch])
+  }, [buildParams, apiFetch, activeTab])
 
   // ── Load users list (sekali) ────────────────────────────────────────────
   const loadUsers = useCallback(async () => {
@@ -167,7 +302,17 @@ const ReportsPage = () => {
   const handlePreviewFetch = async (key) => {
     setPreviewLoading(key)
     try {
-      const url = `/api/reports/${key}${buildParams({ format:'json' })}`
+      // ✨ TAMBAHAN: Tentukan endpoint berdasarkan jenis report
+      let url
+      if (activeTab === 'projects') {
+        // Cari di PROJECT_REPORTS
+        const report = PROJECT_REPORTS.find(r => r.key === key)
+        url = report?.endpoint + buildParams({ format:'json' })
+      } else {
+        // Default IT Support
+        url = `/api/reports/${key}${buildParams({ format:'json' })}`
+      }
+      
       const res  = await apiFetch(url)
       const data = await res.json()
 
@@ -196,29 +341,39 @@ const ReportsPage = () => {
     setLoadingKey(id)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`/api/reports/${key}${buildParams({ format })}`, {
+      
+      // ✨ TAMBAHAN: Tentukan endpoint berdasarkan tab
+      let url
+      if (activeTab === 'projects') {
+        const report = PROJECT_REPORTS.find(r => r.key === key)
+        url = report?.endpoint + buildParams({ format })
+      } else {
+        url = `/api/reports/${key}${buildParams({ format })}`
+      }
+      
+      const res = await fetch(url, {
         headers: { Accept:'application/json', Authorization:`Bearer ${token}` },
       })
       if (!res.ok) throw new Error()
       const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
+      const url_obj  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
-      a.href     = url
+      a.href     = url_obj
       const from = filters.from    ? `_${filters.from}` : ''
       const to   = filters.to      ? `_sd_${filters.to}` : ''
       const usr  = filters.user_id
         ? `_${users.find(u => String(u.id) === filters.user_id)?.name?.replace(/\s+/g, '_') ?? 'user'}`
         : ''
-      a.download = `${key}-report${from}${to}${usr}.${format === 'excel' ? 'xlsx' : 'pdf'}`
+      a.download = `${activeTab}-${key}-report${from}${to}${usr}.${format === 'excel' ? 'xlsx' : 'pdf'}`
       document.body.appendChild(a); a.click(); a.remove()
-      URL.revokeObjectURL(url)
+      URL.revokeObjectURL(url_obj)
     } catch { alert('Gagal export laporan') }
     finally { setLoadingKey(null) }
   }
 
   const resetFilters = () => {
-    setFilters({ from:'', to:'', user_id:'', status:'' })
-    if (preview) setPreview(null) // tutup preview supaya user re-open dengan filter bersih
+    setFilters({ from:'', to:'', user_id:'', status:'', priority:'' })
+    if (preview) setPreview(null)
   }
 
   const activeCount = Object.values(filters).filter(v => v).length
@@ -238,7 +393,8 @@ const ReportsPage = () => {
     marginBottom:5, display:'block',
   }
 
-  const STATS = [
+  // ✨ TAMBAHAN: STATS untuk IT Support
+  const IT_STATS = [
     { label:'Total Tiket',    value: stats ? stats.total_tickets  : '—', color:'#3B82F6' },
     { label:'Resolved',       value: stats ? stats.resolved       : '—', color:'#10B981' },
     { label:'Open',           value: stats ? stats.open           : '—', color:'#F59E0B' },
@@ -246,12 +402,29 @@ const ReportsPage = () => {
     { label:'SLA Score',      value: stats ? `${stats.sla_score}%`     : '—', color:'#EC4899' },
   ]
 
+  // ✨ TAMBAHAN: STATS untuk Project Reports
+  const PROJECT_STATS = [
+    { label:'Total Project', value: stats ? stats.total_projects : '—', color:'#3B82F6' },
+    { label:'Aktif', value: stats ? stats.active_projects : '—', color:'#10B981' },
+    { label:'Total Task', value: stats ? stats.total_tasks : '—', color:'#F59E0B' },
+    { label:'Selesai', value: stats ? stats.completed_tasks : '—', color:'#8B5CF6' },
+    { label:'Rata-rata Progress', value: stats ? `${stats.avg_progress}%` : '—', color:'#EC4899' },
+  ]
+
+  // Tentukan STATS mana yang ditampilkan
+  const STATS = activeTab === 'projects' ? PROJECT_STATS : IT_STATS
+  const currentReports = activeTab === 'projects' ? PROJECT_REPORTS : REPORTS
+  const previewCols = activeTab === 'projects' ? PROJECT_PREVIEW_COLS : PREVIEW_COLS
+
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
-      {/* ── Header ─────────────────────────────────────────── */}
+      {/* ── Header dengan Tab ─────────────────────────────────────────── */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
-        <PageHeader title="Reports" subtitle="Generate dan export laporan IT Support"/>
+        <PageHeader 
+          title="Reports" 
+          subtitle={activeTab === 'projects' ? 'Generate dan export laporan Project Management' : 'Generate dan export laporan IT Support'}
+        />
         <button onClick={() => setShowFilter(f => !f)}
           style={{
             display:'flex', alignItems:'center', gap:6,
@@ -268,6 +441,42 @@ const ReportsPage = () => {
               {activeCount}
             </span>
           )}
+        </button>
+      </div>
+
+      {/*  TAMBAHAN: Tab untuk switch IT Support & Project Reports */}
+      <div style={{ display:'flex', gap:8, borderBottom:`1px solid ${theme.border}`, paddingBottom:12 }}>
+        <button 
+          onClick={() => { setActiveTab('it-support'); setPreview(null); }}
+          style={{
+            padding:'8px 16px',
+            borderRadius:8,
+            background: activeTab === 'it-support' ? theme.accent : 'transparent',
+            color: activeTab === 'it-support' ? '#fff' : theme.textMuted,
+            fontSize:13,
+            fontWeight:600,
+            border:'none',
+            cursor:'pointer',
+            transition:'all 0.2s'
+          }}
+        >
+          IT Support Reports
+        </button>
+        <button 
+          onClick={() => { setActiveTab('projects'); setPreview(null); }}
+          style={{
+            padding:'8px 16px',
+            borderRadius:8,
+            background: activeTab === 'projects' ? theme.accent : 'transparent',
+            color: activeTab === 'projects' ? '#fff' : theme.textMuted,
+            fontSize:13,
+            fontWeight:600,
+            border:'none',
+            cursor:'pointer',
+            transition:'all 0.2s'
+          }}
+        >
+          Project Reports
         </button>
       </div>
 
@@ -296,38 +505,69 @@ const ReportsPage = () => {
               <input type="date" value={filters.to}
                 onChange={e => setFilters(f => ({ ...f, to:e.target.value }))} style={inp}/>
             </div>
-            <div>
-              <label style={lbl}>User / Teknisi</label>
-              <select value={filters.user_id}
-                onChange={e => setFilters(f => ({ ...f, user_id:e.target.value }))} style={inp}>
-                <option value="">— Semua User —</option>
-                {users.length === 0
-                  ? <option disabled>Memuat...</option>
-                  : users.map(u => (
-                      <option key={u.id} value={String(u.id)}>
-                        {u.name} ({u.role ?? u.role_display ?? '—'})
-                      </option>
-                    ))
-                }
-              </select>
-            </div>
-            <div>
-              <label style={lbl}>Status Tiket / Aset</label>
-              <select value={filters.status}
-                onChange={e => setFilters(f => ({ ...f, status:e.target.value }))} style={inp}>
-                <option value="">— Semua Status —</option>
-                <optgroup label="Status Tiket">
-                  {['Open','Assigned','In Progress','Waiting User','Resolved','Closed'].map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="Status Aset">
-                  {['Active','Maintenance','Inactive'].map(s => (
-                    <option key={`a-${s}`} value={s}>{s}</option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
+            
+            {/* ✨ TAMBAHAN: Conditional filter berdasarkan tab */}
+            {activeTab === 'it-support' ? (
+              <>
+                <div>
+                  <label style={lbl}>User / Teknisi</label>
+                  <select value={filters.user_id}
+                    onChange={e => setFilters(f => ({ ...f, user_id:e.target.value }))} style={inp}>
+                    <option value="">— Semua User —</option>
+                    {users.length === 0
+                      ? <option disabled>Memuat...</option>
+                      : users.map(u => (
+                          <option key={u.id} value={String(u.id)}>
+                            {u.name} ({u.role ?? u.role_display ?? '—'})
+                          </option>
+                        ))
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Status Tiket / Aset</label>
+                  <select value={filters.status}
+                    onChange={e => setFilters(f => ({ ...f, status:e.target.value }))} style={inp}>
+                    <option value="">— Semua Status —</option>
+                    <optgroup label="Status Tiket">
+                      {['Open','Assigned','In Progress','Waiting User','Resolved','Closed'].map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Status Aset">
+                      {['Active','Maintenance','Inactive'].map(s => (
+                        <option key={`a-${s}`} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label style={lbl}>Status Project</label>
+                  <select value={filters.status}
+                    onChange={e => setFilters(f => ({ ...f, status:e.target.value }))} style={inp}>
+                    <option value="">— Semua Status —</option>
+                    <option value="active">Aktif</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="completed">Selesai</option>
+                    <option value="cancelled">Dibatalkan</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Prioritas</label>
+                  <select value={filters.priority}
+                    onChange={e => setFilters(f => ({ ...f, priority:e.target.value }))} style={inp}>
+                    <option value="">— Semua Prioritas —</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Active filter badges */}
@@ -342,6 +582,7 @@ const ReportsPage = () => {
                 />
               )}
               {filters.status  && <Badge label={`Status: ${filters.status}`} color="#10B981"/>}
+              {filters.priority && <Badge label={`Prioritas: ${filters.priority}`} color="#F59E0B"/>}
             </div>
           )}
 
@@ -349,9 +590,9 @@ const ReportsPage = () => {
           <div style={{ marginTop:12, padding:'8px 12px', borderRadius:8, background:`${theme.accent}08`, border:`1px solid ${theme.accent}20` }}>
             <p style={{ fontSize:10, color:theme.textMuted, margin:0 }}>
               <span style={{ fontWeight:700, color:theme.accent }}>Catatan:</span>{' '}
-              Filter diterapkan ke semua laporan dan Quick Stats.
-              Untuk Inventaris Aset, filter tanggal berdasarkan <em>tanggal pembelian</em>.
-              Filter <em>User/Teknisi</em> tidak berlaku untuk laporan aset.
+              {activeTab === 'projects' 
+                ? 'Filter diterapkan ke semua laporan project dan Quick Stats.'
+                : 'Filter diterapkan ke semua laporan IT Support dan Quick Stats. Untuk Inventaris Aset, filter tanggal berdasarkan tanggal pembelian.'}
             </p>
           </div>
         </div>
@@ -359,7 +600,7 @@ const ReportsPage = () => {
 
       {/* ── Report Cards ─────────────────────────────────────── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:14 }}>
-        {REPORTS.map(({ key, title, desc, icon:Icon, color }) => {
+        {currentReports.map(({ key, title, desc, icon:Icon, color }) => {
           const isOpen     = preview?.key === key
           const isPrevLoad = previewLoading === key
 
@@ -425,7 +666,7 @@ const ReportsPage = () => {
                       <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11, minWidth:500 }}>
                         <thead>
                           <tr style={{ background:theme.surfaceAlt }}>
-                            {PREVIEW_COLS[key]?.map(col => (
+                            {previewCols[key]?.map(col => (
                               <th key={col.key} style={{ padding:'8px 12px', textAlign:'left', fontSize:10, fontWeight:700, color:theme.textMuted, textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap', borderBottom:`1px solid ${theme.border}`, position:'sticky', top:0, background:theme.surfaceAlt, zIndex:1 }}>
                                 {col.label}
                               </th>
@@ -435,7 +676,7 @@ const ReportsPage = () => {
                         <tbody>
                           {preview.rows.map((row, i) => (
                             <tr key={i} style={{ borderTop:`1px solid ${theme.border}`, background: i % 2 === 1 ? theme.surfaceAlt + '80' : 'transparent' }}>
-                              {PREVIEW_COLS[key]?.map(col => {
+                              {previewCols[key]?.map(col => {
                                 const raw = row[col.key]
                                 const val = col.render ? col.render(raw, row) : (raw ?? '—')
                                 return (
