@@ -478,7 +478,6 @@ export default function ProjectDetailPage() {
     const task = dragTask.current
     if (!task || task.column_id===targetColId) { setDragOverCol(null); return }
 
-    // Pindahkan task di UI dulu
     const updated = project.columns.map(col=>{
       if (col.id===task.column_id) return { ...col, tasks:col.tasks.filter(t=>t.id!==task.id) }
       if (col.id===targetColId)    return { ...col, tasks:[...(col.tasks??[]),{ ...task, column_id:targetColId }] }
@@ -487,50 +486,106 @@ export default function ProjectDetailPage() {
     setProject(prev=>({ ...prev, columns:updated }))
     setDragOverCol(null)
 
-    // Reorder di backend
     const tasks = updated.flatMap(col=>(col.tasks??[]).map((t,idx)=>({ id:t.id, column_id:col.id, position:idx })))
     try { await fetch(`/api/projects/${id}/tasks/reorder`,{ method:'PUT', headers:getHeaders(), body:JSON.stringify({ tasks }) }); showToast('Task dipindahkan ✓') }
     catch { loadProject(); return }
 
-    // Tampilkan modal pilih assignee untuk kolom tujuan
     const targetCol = project.columns.find(c => c.id === targetColId)
-    const existingAssignees = (columnAssigneesMap[task.id] ?? [])
-      .find(ca => ca.column?.id === targetColId)
-    const initIds = existingAssignees
-      ? existingAssignees.assignees.map(a => a.id)
-      : (task.assignees?.length ? task.assignees.map(a => a.id) : (task.assignee ? [task.assignee.id] : []))
 
-    setColAssigneeIds(initIds)
-    setColAssigneeModal({ task, targetColId, colName: targetCol?.name ?? 'Kolom' })
+    // ✅ Selalu ambil assignee dari task yang sedang di-drag, bukan dari cache
+    const currentAssigneeIds = task.assignees?.length
+      ? task.assignees.map(a => a.id)
+      : task.assignee
+        ? [task.assignee.id]
+        : []
+
+    // ✅ Reset form setiap kali modal dibuka
+    setColAssigneeIds([...currentAssigneeIds])
+    setColAssigneeModal({
+      task,
+      targetColId,
+      colName: targetCol?.name ?? 'Kolom',
+      form: {
+        description: task.description ?? '',
+        category:    task.category    ?? '',
+        priority:    task.priority    ?? 'medium',
+      }
+    })
   }
 
   const handleSaveColAssignee = async () => {
-    if (!colAssigneeModal) return
-    setColAssigneeSaving(true)
-    try {
-      const res = await fetch(`/api/projects/${id}/tasks/${colAssigneeModal.task.id}/column-assignees`, {
+  if (!colAssigneeModal) return
+  setColAssigneeSaving(true)
+  try {
+    // 1. Simpan column-assignees
+    const res1 = await fetch(
+      `/api/projects/${id}/tasks/${colAssigneeModal.task.id}/column-assignees`,
+      {
         method: 'POST', headers: getHeaders(),
-        body: JSON.stringify({ column_id: colAssigneeModal.targetColId, assignee_ids: colAssigneeIds }),
-      })
-      const json = await res.json()
-      if (!json.success) throw new Error(json.message)
-      // Update local map
-      setColumnAssigneesMap(prev => {
-        const taskId = colAssigneeModal.task.id
-        const existing = (prev[taskId] ?? []).filter(ca => ca.column?.id !== colAssigneeModal.targetColId)
-        const members = project.members ?? []
-        return {
-          ...prev,
-          [taskId]: [...existing, {
-            column: { id: colAssigneeModal.targetColId, name: colAssigneeModal.colName },
-            assignees: members.filter(m => colAssigneeIds.includes(m.id)),
-          }]
-        }
-      })
-      showToast(`Assignee untuk "${colAssigneeModal.colName}" disimpan ✓`)
-    } catch(e) { showToast(e.message, 'error') }
-    finally { setColAssigneeSaving(false); setColAssigneeModal(null) }
-  }
+        body: JSON.stringify({
+          column_id:    colAssigneeModal.targetColId,
+          assignee_ids: colAssigneeIds,
+        }),
+      }
+    )
+    const json1 = await res1.json()
+    if (!json1.success) throw new Error(json1.message)
+
+    // 2. Update task — assignee + field lainnya
+    const extraForm = colAssigneeModal.form ?? {}
+    const body = {
+      assignee_ids: colAssigneeIds,
+      assigned_to:  colAssigneeIds[0] ?? null,
+      description:  extraForm.description ?? colAssigneeModal.task.description ?? '',
+      category:     extraForm.category    ?? colAssigneeModal.task.category    ?? '',
+      priority:     extraForm.priority    ?? colAssigneeModal.task.priority    ?? 'medium',
+    }
+
+    const res2 = await fetch(
+      `/api/projects/${id}/tasks/${colAssigneeModal.task.id}`,
+      { method: 'PUT', headers: getHeaders(), body: JSON.stringify(body) }
+    )
+    const json2 = await res2.json()
+    if (!json2.success) throw new Error(json2.message)
+
+    // 3. ✅ Update task card di UI dengan data terbaru dari server
+    setProject(prev => ({
+      ...prev,
+      columns: prev.columns.map(col => ({
+        ...col,
+        tasks: (col.tasks ?? []).map(t =>
+          t.id === colAssigneeModal.task.id
+            ? {
+                ...t,
+                ...json2.data,
+                // ✅ Pastikan assignees ter-update dari response server
+                assignees: json2.data.assignees ?? t.assignees,
+                assignee:  json2.data.assignee  ?? t.assignee,
+              }
+            : t
+        ),
+      })),
+    }))
+
+    // 4. Update columnAssigneesMap
+    setColumnAssigneesMap(prev => {
+      const taskId   = colAssigneeModal.task.id
+      const existing = (prev[taskId] ?? []).filter(
+        ca => ca.column?.id !== colAssigneeModal.targetColId
+      )
+      return {
+        ...prev,
+        [taskId]: [...existing, {
+          column:    { id: colAssigneeModal.targetColId, name: colAssigneeModal.colName },
+          assignees: (project.members ?? []).filter(m => colAssigneeIds.includes(m.id)),
+        }],
+      }
+    })
+
+    showToast('Task diupdate ✓')
+  } catch(e) { showToast(e.message, 'error') }
+  finally { setColAssigneeSaving(false); setColAssigneeModal(null) }
+}
 
   // Stats
   // Sort kolom: Revisi selalu paling akhir, sisanya urut by position
@@ -736,54 +791,183 @@ export default function ProjectDetailPage() {
       {toast && <Toast message={toast.msg} type={toast.type}/>}
 
       {/* ── Column Assignee Modal ── */}
-      {colAssigneeModal && (
-        <div onClick={()=>setColAssigneeModal(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:52, padding:16 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:16, width:'100%', maxWidth:420, boxShadow:'0 25px 60px rgba(0,0,0,0.4)', overflow:'hidden' }}>
-            {/* Header */}
-            <div style={{ padding:'16px 20px', borderBottom:`1px solid ${theme.border}`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <div>
-                <p style={{ color:theme.text, fontWeight:700, fontSize:14, margin:0 }}>Pilih Assignee</p>
-                <p style={{ color:theme.textMuted, fontSize:11, margin:'2px 0 0' }}>
-                  Untuk kolom <strong style={{ color:theme.accent }}>{colAssigneeModal.colName}</strong>
-                </p>
-              </div>
-              <button onClick={()=>setColAssigneeModal(null)} style={{ background:'none', border:'none', cursor:'pointer', color:theme.textMuted }}><X size={16}/></button>
+      {/* ── Column Move Modal — sama seperti Edit Task tapi tanpa due date ── */}
+{colAssigneeModal && (
+  <div onClick={() => setColAssigneeModal(null)}
+    style={{ position:'fixed', inset:0, background:theme.overlay, backdropFilter:'blur(4px)',
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:52, padding:16 }}>
+    <div onClick={e => e.stopPropagation()}
+      style={{ background:theme.surface, border:`1px solid ${theme.border}`, borderRadius:16,
+        width:'100%', maxWidth:520, boxShadow:'0 25px 60px rgba(0,0,0,0.35)',
+        overflow:'hidden', maxHeight:'92vh', display:'flex', flexDirection:'column' }}>
+
+      {/* ── Header ── */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
+        padding:'16px 20px', borderBottom:`1px solid ${theme.border}`, flexShrink:0 }}>
+        <div>
+          <h3 style={{ color:theme.text, fontSize:14, fontWeight:700, margin:0 }}>Edit Task</h3>
+          <p style={{ color:theme.textMuted, fontSize:11, margin:'2px 0 0' }}>
+            Dipindahkan ke kolom{' '}
+            <strong style={{ color:theme.accent }}>{colAssigneeModal.colName}</strong>
+          </p>
+        </div>
+        <button onClick={() => setColAssigneeModal(null)}
+          style={{ color:theme.textMuted, background:'none', border:'none', cursor:'pointer' }}>
+          <X size={16}/>
+        </button>
+      </div>
+
+      {/* ── Body ── */}
+      <div style={{ padding:20, display:'flex', flexDirection:'column', gap:14, overflowY:'auto' }}>
+
+        {/* Deskripsi */}
+        <div>
+          <label style={lbl(theme)}>Deskripsi</label>
+          <textarea
+            value={colAssigneeModal.form?.description ?? colAssigneeModal.task?.description ?? ''}
+            onChange={e => setColAssigneeModal(prev => ({
+              ...prev, form: { ...(prev.form ?? {}), description: e.target.value }
+            }))}
+            rows={3} placeholder="Deskripsi task..."
+            style={{ ...inp(theme), resize:'vertical' }}/>
+        </div>
+
+        {/* Kategori */}
+        <div>
+          <label style={lbl(theme)}>Kategori</label>
+          <input
+            value={colAssigneeModal.form?.category ?? colAssigneeModal.task?.category ?? ''}
+            onChange={e => setColAssigneeModal(prev => ({
+              ...prev, form: { ...(prev.form ?? {}), category: e.target.value }
+            }))}
+            placeholder="Frontend, Backend, Testing..."
+            style={inp(theme)}/>
+        </div>
+
+        {/* Kolom & Prioritas — sama seperti Edit Task */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          {/* Kolom — disabled, hanya info */}
+          <div>
+            <label style={lbl(theme)}>Kolom</label>
+            <div style={{ ...inp(theme), display:'flex', alignItems:'center', gap:8,
+              opacity:0.6, cursor:'not-allowed' }}>
+              <div style={{ width:8, height:8, borderRadius:'50%',
+                background: (project.columns??[]).find(c=>c.id===colAssigneeModal.targetColId)?.color ?? theme.accent }}/>
+              {colAssigneeModal.colName}
             </div>
-            {/* Body */}
-            <div style={{ padding:16, maxHeight:300, overflowY:'auto' }}>
-              {(project.members??[]).length === 0 ? (
-                <p style={{ color:theme.textMuted, fontSize:12, textAlign:'center', padding:20 }}>Belum ada member</p>
-              ) : (project.members??[]).map(m => {
-                const sel = colAssigneeIds.includes(m.id)
+          </div>
+          {/* Prioritas */}
+          <div>
+            <label style={lbl(theme)}>Prioritas</label>
+            <select
+              value={colAssigneeModal.form?.priority ?? colAssigneeModal.task?.priority ?? 'medium'}
+              onChange={e => setColAssigneeModal(prev => ({
+                ...prev, form: { ...(prev.form ?? {}), priority: e.target.value }
+              }))}
+              style={inp(theme)}>
+              {Object.entries(PRIORITY_CFG).map(([k,v]) =>
+                <option key={k} value={k}>{v.label}</option>
+              )}
+            </select>
+          </div>
+        </div>
+
+        {/* ── Assignee — sama persis dengan TaskFormModal ── */}
+        <div>
+          <label style={lbl(theme)}>
+            Assignee
+            <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0,
+              marginLeft:6, color:theme.textMuted }}>
+              ({colAssigneeIds.length} dipilih)
+            </span>
+          </label>
+          <div style={{ border:`1px solid ${theme.border}`, borderRadius:8, overflow:'hidden' }}>
+            {(project.members ?? []).length === 0 ? (
+              <p style={{ color:theme.textMuted, fontSize:11, margin:0, padding:'12px',
+                textAlign:'center' }}>Belum ada member</p>
+            ) : (
+              <div style={{ maxHeight:160, overflowY:'auto' }}>
+                {(project.members ?? []).map(m => {
+                  const sel = colAssigneeIds.includes(m.id)
+                  return (
+                    <label key={m.id} style={{ display:'flex', alignItems:'center', gap:10,
+                      padding:'8px 12px', cursor:'pointer',
+                      background: sel ? `${theme.accent}0d` : 'transparent',
+                      borderBottom:`1px solid ${theme.border}`, transition:'background 0.1s' }}>
+                      <input type="checkbox" checked={sel}
+                        onChange={() => setColAssigneeIds(ids =>
+                          sel ? ids.filter(x => x !== m.id) : [...ids, m.id]
+                        )}
+                        style={{ accentColor:theme.accent, width:14, height:14, flexShrink:0 }}/>
+                      <div style={{ width:26, height:26, borderRadius:'50%',
+                        background: m.color ?? '#6366f1', display:'flex', alignItems:'center',
+                        justifyContent:'center', fontSize:9, fontWeight:700, color:'#fff',
+                        flexShrink:0 }}>
+                        {(m.name ?? '').slice(0,2).toUpperCase()}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:12, fontWeight:500, color:theme.text }}>{m.name}</div>
+                        <div style={{ fontSize:10, color:theme.textMuted }}>{m.role ?? m.email ?? ''}</div>
+                      </div>
+                      {sel && <div style={{ width:8, height:8, borderRadius:'50%',
+                        background:theme.accent, flexShrink:0 }}/>}
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Chip preview assignee — sama seperti Edit Task */}
+          {colAssigneeIds.length > 0 && (
+            <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:6 }}>
+              {colAssigneeIds.map(uid => {
+                const m = (project.members ?? []).find(x => x.id === uid)
+                if (!m) return null
                 return (
-                  <label key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:8, cursor:'pointer', background: sel ? `${theme.accent}0d` : 'transparent', marginBottom:4, border:`1px solid ${sel ? theme.accent+'33' : 'transparent'}`, transition:'all 0.1s' }}>
-                    <input type="checkbox" checked={sel} onChange={()=>setColAssigneeIds(ids => sel ? ids.filter(x=>x!==m.id) : [...ids, m.id])} style={{ accentColor:theme.accent, width:14, height:14, flexShrink:0 }}/>
-                    <div style={{ width:28, height:28, borderRadius:'50%', background:m.color??'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#fff', flexShrink:0 }}>
-                      {(m.name??'').slice(0,2).toUpperCase()}
+                  <span key={uid} style={{ display:'inline-flex', alignItems:'center', gap:4,
+                    padding:'2px 8px 2px 4px', borderRadius:99,
+                    background:`${theme.accent}12`, border:`1px solid ${theme.accent}33`,
+                    fontSize:10, color:theme.accent }}>
+                    <div style={{ width:16, height:16, borderRadius:'50%',
+                      background: m.color ?? '#6366f1', display:'flex', alignItems:'center',
+                      justifyContent:'center', fontSize:7, fontWeight:700, color:'#fff' }}>
+                      {(m.name ?? '').slice(0,2).toUpperCase()}
                     </div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:13, fontWeight:500, color:theme.text }}>{m.name}</div>
-                      <div style={{ fontSize:10, color:theme.textMuted }}>{m.role ?? ''}</div>
-                    </div>
-                    {sel && <div style={{ width:7, height:7, borderRadius:'50%', background:theme.accent }}/>}
-                  </label>
+                    {m.name?.split(' ')[0]}
+                    <button
+                      onClick={() => setColAssigneeIds(ids => ids.filter(x => x !== uid))}
+                      style={{ background:'none', border:'none', cursor:'pointer',
+                        color:theme.accent, padding:0, fontSize:12, lineHeight:1 }}>×</button>
+                  </span>
                 )
               })}
             </div>
-            {/* Footer */}
-            <div style={{ padding:'12px 16px', borderTop:`1px solid ${theme.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontSize:11, color:theme.textMuted }}>{colAssigneeIds.length} dipilih</span>
-              <div style={{ display:'flex', gap:8 }}>
-                <button onClick={()=>setColAssigneeModal(null)} style={{ padding:'7px 14px', borderRadius:8, border:`1px solid ${theme.border}`, background:'transparent', color:theme.textMuted, fontSize:13, cursor:'pointer' }}>Lewati</button>
-                <button onClick={handleSaveColAssignee} disabled={colAssigneeSaving}
-                  style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 16px', borderRadius:8, background:theme.accent, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:colAssigneeSaving?'not-allowed':'pointer', opacity:colAssigneeSaving?0.7:1 }}>
-                  <Save size={12}/>{colAssigneeSaving ? 'Menyimpan...' : 'Simpan'}
-                </button>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* ── Footer — sama seperti Edit Task ── */}
+      <div style={{ display:'flex', justifyContent:'flex-end', gap:8,
+        padding:'12px 20px', borderTop:`1px solid ${theme.border}`, flexShrink:0 }}>
+        <button onClick={() => setColAssigneeModal(null)}
+          style={{ padding:'8px 16px', borderRadius:8, border:`1px solid ${theme.border}`,
+            background:'transparent', color:theme.textMuted, fontSize:13, cursor:'pointer' }}>
+          Batal
+        </button>
+        <button onClick={handleSaveColAssignee} disabled={colAssigneeSaving}
+          style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px',
+            borderRadius:8, background:theme.accent, color:'#fff', border:'none',
+            fontSize:13, fontWeight:600,
+            cursor: colAssigneeSaving ? 'not-allowed' : 'pointer',
+            opacity: colAssigneeSaving ? 0.7 : 1 }}>
+          <Save size={13}/>
+          {colAssigneeSaving ? 'Menyimpan...' : 'Simpan'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Tracking Panel */}
       {trackingPanel && (
